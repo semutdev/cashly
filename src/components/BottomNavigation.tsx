@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Home, PlusCircle, Settings } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { SheetTrigger } from './ui/sheet';
+import { Sheet, SheetTrigger } from './ui/sheet';
 
 interface BottomNavigationProps {
     children: React.ReactNode;
@@ -32,34 +32,37 @@ export function BottomNavigation({ children }: BottomNavigationProps) {
           <span className="text-xs">Home</span>
         </Button>
 
-        {addTransactionSheet && React.isValidElement(addTransactionSheet) &&
-            <SheetTrigger asChild>
-                <Button
-                    variant="ghost"
-                    className="inline-flex flex-col items-center justify-center px-5 rounded-none h-full text-muted-foreground"
-                >
-                    <PlusCircle className="w-6 h-6 mb-1" />
-                    <span className="text-xs">Tambah</span>
-                </Button>
-            </SheetTrigger>
-        }
+        {addTransactionSheet && React.isValidElement(addTransactionSheet) && (
+            <Sheet>
+                 <SheetTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        className="inline-flex flex-col items-center justify-center px-5 rounded-none h-full text-muted-foreground"
+                    >
+                        <PlusCircle className="w-6 h-6 mb-1" />
+                        <span className="text-xs">Tambah</span>
+                    </Button>
+                </SheetTrigger>
+                {addTransactionSheet}
+            </Sheet>
+        )}
+       
 
-        {manageAccountsSheet && React.isValidElement(manageAccountsSheet) &&
-            <SheetTrigger asChild>
-                <Button
-                    variant="ghost"
-                    className="inline-flex flex-col items-center justify-center px-5 rounded-none h-full text-muted-foreground"
-                >
-                    <Settings className="w-6 h-6 mb-1" />
-                    <span className="text-xs">Akun</span>
-                </Button>
-            </SheetTrigger>
-        }
+        {manageAccountsSheet && React.isValidElement(manageAccountsSheet) && (
+            <Sheet>
+                 <SheetTrigger asChild>
+                    <Button
+                        variant="ghost"
+                        className="inline-flex flex-col items-center justify-center px-5 rounded-none h-full text-muted-foreground"
+                    >
+                        <Settings className="w-6 h-6 mb-1" />
+                        <span className="text-xs">Akun</span>
+                    </Button>
+                </SheetTrigger>
+                {manageAccountsSheet}
+            </Sheet>
+        )}
       </div>
-      
-      {/* This renders the actual sheets */}
-      {addTransactionSheet}
-      {manageAccountsSheet}
     </div>
   );
 }

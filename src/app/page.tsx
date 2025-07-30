@@ -114,7 +114,7 @@ export default function HomePage() {
             accounts={accounts}
             setAccounts={setAccounts}
           >
-            <Button variant="outline" size="icon" onClick={() => setManageSheetOpen(true)}>
+            <Button variant="outline" size="icon">
               <Settings className="h-4 w-4" />
             </Button>
           </ManageAccountsSheet>
@@ -125,7 +125,7 @@ export default function HomePage() {
             addTransfer={addTransfer}
             accounts={accounts}
           >
-            <Button onClick={() => setAddSheetOpen(true)}>
+            <Button>
               <Plus className="mr-2 h-4 w-4" />
               Tambah Transaksi
             </Button>

@@ -118,11 +118,90 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
         })
     }
   }
+  
+  if (children) {
+    return (
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>{children}</SheetTrigger>
+            <SheetContent className="overflow-y-auto">
+                <SheetHeader>
+                <SheetTitle>Kelola Akun</SheetTitle>
+                <SheetDescription>
+                    Atur saldo awal dan tambahkan rekening bank baru di sini.
+                </SheetDescription>
+                </SheetHeader>
+                
+                <div className="space-y-4 py-6">
+                    <h3 className="font-semibold text-lg">Saldo Awal</h3>
+                    <div className="space-y-4">
+                    {accounts.map(account => (
+                        <div key={account.id} className="flex items-center gap-2">
+                            <div className="flex-1">
+                                <label className="text-sm font-medium">{account.name}</label>
+                                <Input 
+                                    type="number"
+                                    defaultValue={account.initialBalance}
+                                    onBlur={(e) => handleBalanceChange(account.id, parseInt(e.target.value) || 0)}
+                                    className="mt-1"
+                                    placeholder="Saldo Awal"
+                                />
+                            </div>
+                            {account.type === 'bank' && (
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete(account.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                </Button>
+                            )}
+                        </div>
+                    ))}
+                    </div>
+                </div>
+
+                <hr className="my-4"/>
+
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <h3 className="font-semibold text-lg">Tambah Akun Bank Baru</h3>
+                    <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Nama Bank</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Contoh: Mandiri" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    
+                    <FormField
+                    control={form.control}
+                    name="initialBalance"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Saldo Awal</FormLabel>
+                        <FormControl>
+                            <Input type="number" placeholder="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+
+                    <Button type="submit" className="w-full">
+                        <PlusCircle className="mr-2 h-4 w-4"/>
+                        Tambah Akun Bank
+                    </Button>
+                </form>
+                </Form>
+            </SheetContent>
+        </Sheet>
+    )
+  }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      {children && <SheetTrigger asChild>{children}</SheetTrigger>}
-      <SheetContent className="overflow-y-auto">
+    <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Kelola Akun</SheetTitle>
           <SheetDescription>
@@ -195,6 +274,5 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
           </form>
         </Form>
       </SheetContent>
-    </Sheet>
   );
 }

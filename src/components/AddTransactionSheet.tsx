@@ -153,10 +153,399 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
     }
   }, [activeTab, transactionForm]);
 
+  if(children){
+    return (
+        <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>{children}</SheetTrigger>
+            <SheetContent className="overflow-y-auto">
+            <SheetHeader>
+            <SheetTitle>Tambah Transaksi Baru</SheetTitle>
+            <SheetDescription>
+                Catat pemasukan, pengeluaran atau transfer antar akun. Klik simpan jika sudah selesai.
+            </SheetDescription>
+            </SheetHeader>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full pt-4">
+                <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="expense">Pengeluaran</TabsTrigger>
+                    <TabsTrigger value="income">Pemasukan</TabsTrigger>
+                    <TabsTrigger value="transfer">Transfer</TabsTrigger>
+                </TabsList>
+                <TabsContent value="expense">
+                    <Form {...transactionForm}>
+                    <form onSubmit={transactionForm.handleSubmit(onTransactionSubmit)} className="space-y-6 pt-4">
+                        <FormField
+                        control={transactionForm.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Deskripsi</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Contoh: Kopi pagi" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        
+                        <FormField
+                        control={transactionForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Jumlah</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="0" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={transactionForm.control}
+                            name="accountId"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Akun</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Pilih akun" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {accounts.map(acc => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                        {acc.name}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={transactionForm.control}
+                            name="category"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Kategori</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Pilih kategori" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {categories.map(cat => (
+                                    <SelectItem key={cat.value} value={cat.value}>
+                                        {cat.label}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        </div>
+                        
+                        <FormField
+                        control={transactionForm.control}
+                        name="date"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                            <FormLabel>Tanggal</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                        'w-full pl-3 text-left font-normal',
+                                        !field.value && 'text-muted-foreground'
+                                    )}
+                                    >
+                                    {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={(date) => {
+                                        if(date) transactionForm.setValue('date', date)
+                                    }}
+                                    disabled={date => date > new Date() || date < new Date('1900-01-01')}
+                                    initialFocus
+                                />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+
+                        <Button type="submit" className="w-full">Simpan Transaksi</Button>
+                    </form>
+                    </Form>
+                </TabsContent>
+                <TabsContent value="income">
+                    <Form {...transactionForm}>
+                    <form onSubmit={transactionForm.handleSubmit(onTransactionSubmit)} className="space-y-6 pt-4">
+                        <FormField
+                        control={transactionForm.control}
+                        name="description"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Deskripsi</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Contoh: Gaji bulanan" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        
+                        <FormField
+                        control={transactionForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Jumlah</FormLabel>
+                            <FormControl>
+                                <Input type="number" placeholder="0" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+
+                        <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={transactionForm.control}
+                            name="accountId"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Akun</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Pilih akun" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {accounts.map(acc => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                        {acc.name}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={transactionForm.control}
+                            name="category"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Kategori</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Pilih kategori" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {categories.map(cat => (
+                                    <SelectItem key={cat.value} value={cat.value}>
+                                        {cat.label}
+                                    </SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        </div>
+                        
+                        <FormField
+                        control={transactionForm.control}
+                        name="date"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                            <FormLabel>Tanggal</FormLabel>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                <FormControl>
+                                    <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                        'w-full pl-3 text-left font-normal',
+                                        !field.value && 'text-muted-foreground'
+                                    )}
+                                    >
+                                    {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </FormControl>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                    mode="single"
+                                    selected={field.value}
+                                    onSelect={(date) => {
+                                        if(date) transactionForm.setValue('date', date)
+                                    }}
+                                    disabled={date => date > new Date() || date < new Date('1900-01-01')}
+                                    initialFocus
+                                />
+                                </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+
+                        <Button type="submit" className="w-full">Simpan Transaksi</Button>
+                    </form>
+                    </Form>
+                </TabsContent>
+                <TabsContent value="transfer">
+                    <Form {...transferForm}>
+                        <form onSubmit={transferForm.handleSubmit(onTransferSubmit)} className="space-y-6 pt-4">
+                            <FormField
+                                control={transferForm.control}
+                                name="description"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Deskripsi</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Contoh: Transfer ke rekening tabungan" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={transferForm.control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>Jumlah</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" placeholder="0" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={transferForm.control}
+                                    name="fromAccountId"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Dari Akun</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                            <SelectValue placeholder="Pilih akun" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {accounts.map(acc => (
+                                            <SelectItem key={acc.id} value={acc.id}>
+                                                {acc.name}
+                                            </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={transferForm.control}
+                                    name="toAccountId"
+                                    render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Ke Akun</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                            <SelectValue placeholder="Pilih akun" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {accounts.filter(acc => acc.id !== fromAccountId).map(acc => (
+                                            <SelectItem key={acc.id} value={acc.id}>
+                                                {acc.name}
+                                            </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <FormField
+                                control={transferForm.control}
+                                name="date"
+                                render={({ field }) => (
+                                    <FormItem className="flex flex-col">
+                                    <FormLabel>Tanggal</FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                        <FormControl>
+                                            <Button
+                                            variant={'outline'}
+                                            className={cn(
+                                                'w-full pl-3 text-left font-normal',
+                                                !field.value && 'text-muted-foreground'
+                                            )}
+                                            >
+                                            {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                            </Button>
+                                        </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={field.value}
+                                            onSelect={(date) => {
+                                            if (date) transferForm.setValue('date', date)
+                                            }}
+                                            disabled={date => date > new Date() || date < new Date('1900-01-01')}
+                                            initialFocus
+                                        />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" className="w-full">Simpan Transfer</Button>
+                        </form>
+                    </Form>
+                </TabsContent>
+            </Tabs>
+            </SheetContent>
+        </Sheet>
+    )
+  }
+
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      {children && <SheetTrigger asChild>{children}</SheetTrigger>}
-      <SheetContent className="overflow-y-auto">
+    <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Tambah Transaksi Baru</SheetTitle>
           <SheetDescription>
@@ -539,6 +928,5 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
             </TabsContent>
         </Tabs>
       </SheetContent>
-    </Sheet>
   );
 }
