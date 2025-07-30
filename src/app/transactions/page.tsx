@@ -30,10 +30,12 @@ import {
   sub,
   endOfMonth,
   format,
+  startOfDay,
+  endOfDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-type FilterOption = 'all' | 'week' | 'month' | 'last-month' | 'year' | 'custom';
+type FilterOption = 'all' | 'today' | 'week' | 'month' | 'last-month' | 'year' | 'custom';
 
 export default function TransactionsPage() {
   const [allTransactions, setAllTransactions] = React.useState<Transaction[]>(
@@ -49,6 +51,7 @@ export default function TransactionsPage() {
     from: undefined,
     to: undefined,
   })
+  const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -80,6 +83,10 @@ export default function TransactionsPage() {
     let endDate: Date | null = null;
 
     switch (filter) {
+      case 'today':
+        startDate = startOfDay(now);
+        endDate = endOfDay(now);
+        break;
       case 'week':
         startDate = startOfWeek(now);
         endDate = now;
@@ -120,6 +127,11 @@ export default function TransactionsPage() {
     }
   }, [filter, allTransactions, customDateRange]);
 
+  const handleCustomFilterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setFilter('custom');
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -141,7 +153,7 @@ export default function TransactionsPage() {
             Semua Transaksi
           </h1>
         </div>
-        <DropdownMenu>
+        <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
               <ListFilter className="mr-2 h-4 w-4" />
@@ -155,6 +167,9 @@ export default function TransactionsPage() {
             >
               <DropdownMenuRadioItem value="all">
                 Semua
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="today">
+                Hari Ini
               </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="week">
                 Minggu Ini
@@ -171,10 +186,10 @@ export default function TransactionsPage() {
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5">
-                <DropdownMenuItem onSelect={(e) => {
-                    e.preventDefault();
-                    setFilter('custom');
-                }}>
+                <DropdownMenuItem 
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => setFilter('custom')}
+                >
                     <span className={cn("w-full", filter === 'custom' && 'font-bold')}>
                       Custom
                     </span>
