@@ -2,12 +2,9 @@
 'use client';
 
 import * as React from 'react';
-import { ArrowLeft, ListFilter } from 'lucide-react';
+import { ArrowLeft, ListFilter, Calendar as CalendarIcon } from 'lucide-react';
 import Link from 'next/link';
-import {
-  getTransactions,
-  getAccounts,
-} from '@/lib/supabase';
+import { getTransactions, getAccounts } from '@/lib/supabase';
 import type { Transaction, Account } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TransactionsList } from '@/components/TransactionsList';
@@ -17,17 +14,42 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
-import { startOfWeek, startOfMonth, startOfYear, sub } from 'date-fns';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  startOfWeek,
+  startOfMonth,
+  startOfYear,
+  sub,
+  endOfMonth,
+  format,
+} from 'date-fns';
+import { cn } from '@/lib/utils';
+import { Label } from '@/components/ui/label';
 
-type FilterOption = 'all' | 'week' | 'month' | 'year';
+type FilterOption = 'all' | 'week' | 'month' | 'last-month' | 'year' | 'custom';
 
 export default function TransactionsPage() {
-  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = React.useState<Transaction[]>([]);
+  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>(
+    []
+  );
+  const [filteredTransactions, setFilteredTransactions] = React.useState<
+    Transaction[]
+  >([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState<FilterOption>('all');
+  const [customDateRange, setCustomDateRange] = React.useState<{from: Date | undefined, to: Date | undefined}>({
+    from: undefined,
+    to: undefined,
+  })
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -37,7 +59,10 @@ export default function TransactionsPage() {
           getTransactions(),
           getAccounts(),
         ]);
-        const mappedTransactions = transactionsData.map(t => ({...t, date: new Date(t.date)}));
+        const mappedTransactions = transactionsData.map(t => ({
+          ...t,
+          date: new Date(t.date),
+        }));
         setAllTransactions(mappedTransactions);
         setFilteredTransactions(mappedTransactions);
         setAccounts(accountsData);
@@ -53,16 +78,34 @@ export default function TransactionsPage() {
   React.useEffect(() => {
     const now = new Date();
     let startDate: Date | null = null;
+    let endDate: Date | null = null;
 
     switch (filter) {
       case 'week':
         startDate = startOfWeek(now);
+        endDate = now;
         break;
       case 'month':
         startDate = startOfMonth(now);
+        endDate = now;
+        break;
+      case 'last-month':
+        const lastMonth = sub(now, { months: 1 });
+        startDate = startOfMonth(lastMonth);
+        endDate = endOfMonth(lastMonth);
         break;
       case 'year':
         startDate = startOfYear(now);
+        endDate = now;
+        break;
+      case 'custom':
+        if(customDateRange.from && customDateRange.to){
+            startDate = customDateRange.from;
+            endDate = customDateRange.to;
+        } else {
+             setFilteredTransactions(allTransactions);
+             return;
+        }
         break;
       case 'all':
       default:
@@ -70,11 +113,13 @@ export default function TransactionsPage() {
         return;
     }
 
-    if (startDate) {
-      const filtered = allTransactions.filter(t => t.date >= startDate!);
+    if (startDate && endDate) {
+      const filtered = allTransactions.filter(
+        t => t.date >= startDate! && t.date <= endDate!
+      );
       setFilteredTransactions(filtered);
     }
-  }, [filter, allTransactions]);
+  }, [filter, allTransactions, customDateRange]);
 
   if (loading) {
     return (
@@ -104,7 +149,7 @@ export default function TransactionsPage() {
               Filter
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
+          <DropdownMenuContent className="w-64">
             <DropdownMenuRadioGroup
               value={filter}
               onValueChange={value => setFilter(value as FilterOption)}
@@ -118,10 +163,69 @@ export default function TransactionsPage() {
               <DropdownMenuRadioItem value="month">
                 Bulan Ini
               </DropdownMenuRadioItem>
+               <DropdownMenuRadioItem value="last-month">
+                Bulan Lalu
+              </DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="year">
                 Tahun Ini
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5">
+                <DropdownMenuRadioGroup value={filter} onValueChange={(value) => setFilter(value as FilterOption)}>
+                    <DropdownMenuRadioItem value="custom" className='w-full'>
+                        Custom
+                    </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+                {filter === 'custom' && (
+                    <div className="flex flex-col gap-2 pt-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'w-full justify-start text-left font-normal',
+                                    !customDateRange.from && 'text-muted-foreground'
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {customDateRange.from ? format(customDateRange.from, 'PPP') : <span>Dari tanggal</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={customDateRange.from}
+                                onSelect={(date) => setCustomDateRange(prev => ({...prev, from: date}))}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'w-full justify-start text-left font-normal',
+                                    !customDateRange.to && 'text-muted-foreground'
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {customDateRange.to ? format(customDateRange.to, 'PPP') : <span>Ke tanggal</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={customDateRange.to}
+                                onSelect={(date) => setCustomDateRange(prev => ({...prev, to: date}))}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                )}
+            </div>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
