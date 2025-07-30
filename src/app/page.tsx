@@ -143,30 +143,22 @@ export default function HomePage() {
           </div>
         </div>
       </main>
-      <BottomNavigation 
-        onAddTransaction={() => setAddSheetOpen(true)}
-        onManageAccounts={() => setManageSheetOpen(true)}
-      />
       
-      {/* Sheets need to be available for mobile navigation */}
-      <AddTransactionSheet
-        isOpen={isAddSheetOpen}
-        setIsOpen={setAddSheetOpen}
-        addTransaction={addTransaction}
-        addTransfer={addTransfer}
-        accounts={accounts}
-      >
-        <div />
-      </AddTransactionSheet>
-      <ManageAccountsSheet
-        isOpen={isManageSheetOpen}
-        setIsOpen={setManageSheetOpen}
-        accounts={accounts}
-        setAccounts={setAccounts}
-      >
-        <div />
-      </ManageAccountsSheet>
-
+      <BottomNavigation>
+        <AddTransactionSheet
+            isOpen={isAddSheetOpen}
+            setIsOpen={setAddSheetOpen}
+            addTransaction={addTransaction}
+            addTransfer={addTransfer}
+            accounts={accounts}
+        />
+        <ManageAccountsSheet
+            isOpen={isManageSheetOpen}
+            setIsOpen={setManageSheetOpen}
+            accounts={accounts}
+            setAccounts={setAccounts}
+        />
+      </BottomNavigation>
     </div>
   );
 }

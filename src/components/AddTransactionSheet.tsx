@@ -42,7 +42,6 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from '@/lib/constants';
 import type { Transaction, Account, Transfer } from '@/lib/types';
-import { addTransfer } from '@/lib/supabase';
 
 const transactionFormSchema = z.object({
   type: z.enum(['income', 'expense']),
@@ -69,7 +68,7 @@ type TransactionFormValues = z.infer<typeof transactionFormSchema>;
 type TransferFormValues = z.infer<typeof transferFormSchema>;
 
 interface AddTransactionSheetProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
@@ -156,7 +155,7 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>{children}</SheetTrigger>
+      {children && <SheetTrigger asChild>{children}</SheetTrigger>}
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Tambah Transaksi Baru</SheetTitle>

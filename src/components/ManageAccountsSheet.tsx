@@ -36,7 +36,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface ManageAccountsSheetProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   accounts: Account[];
@@ -121,7 +121,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
 
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>{children}</SheetTrigger>
+      {children && <SheetTrigger asChild>{children}</SheetTrigger>}
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>Kelola Akun</SheetTitle>
