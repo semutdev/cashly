@@ -13,6 +13,7 @@ import { BalanceCards } from '@/components/BalanceCards';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { SpendingChart } from '@/components/SpendingChart';
 import { ManageAccountsSheet } from '@/components/ManageAccountsSheet';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { getAccounts, getTransactions, addTransaction as dbAddTransaction, addTransfer as dbAddTransfer } from '@/lib/supabase';
 
 
@@ -106,7 +107,7 @@ export default function HomePage() {
         <h1 className="font-headline text-2xl font-bold text-foreground md:text-3xl">
           KeuanganKu
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex">
            <ManageAccountsSheet
             isOpen={isManageSheetOpen}
             setIsOpen={setManageSheetOpen}
@@ -131,7 +132,7 @@ export default function HomePage() {
           </AddTransactionSheet>
         </div>
       </header>
-      <main className="container mx-auto p-4 md:p-6">
+      <main className="container mx-auto p-4 md:p-6 pb-24 md:pb-6">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <BalanceCards balances={balances} />
@@ -142,6 +143,30 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+      <BottomNavigation 
+        onAddTransaction={() => setAddSheetOpen(true)}
+        onManageAccounts={() => setManageSheetOpen(true)}
+      />
+      
+      {/* Sheets need to be available for mobile navigation */}
+      <AddTransactionSheet
+        isOpen={isAddSheetOpen}
+        setIsOpen={setAddSheetOpen}
+        addTransaction={addTransaction}
+        addTransfer={addTransfer}
+        accounts={accounts}
+      >
+        <div />
+      </AddTransactionSheet>
+      <ManageAccountsSheet
+        isOpen={isManageSheetOpen}
+        setIsOpen={setManageSheetOpen}
+        accounts={accounts}
+        setAccounts={setAccounts}
+      >
+        <div />
+      </ManageAccountsSheet>
+
     </div>
   );
 }

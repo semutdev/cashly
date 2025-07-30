@@ -103,6 +103,17 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
         description: "Transfer antar akun",
     }
   });
+  
+    React.useEffect(() => {
+    const subscription = transactionForm.watch((value, { name, type }) => {
+      if (name === 'type' && type === 'change') {
+        const newType = value.type || 'expense';
+        setActiveTab(newType);
+        transactionForm.setValue('type', newType);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [transactionForm]);
 
   const transactionType = transactionForm.watch('type');
   const categories = transactionType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
@@ -134,17 +145,6 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
   }
 
   const fromAccountId = transferForm.watch('fromAccountId');
-
-  React.useEffect(() => {
-    const subscription = transactionForm.watch((value, { name, type }) => {
-      if (name === 'type' && type === 'change') {
-        const newType = value.type || 'expense';
-        setActiveTab(newType);
-        transactionForm.setValue('type', newType);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [transactionForm]);
   
   React.useEffect(() => {
     if (activeTab === 'expense') {
