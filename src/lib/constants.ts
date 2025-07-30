@@ -9,6 +9,7 @@ import {
   Popcorn,
   ShoppingCart,
   HelpCircle,
+  ArrowRightLeft,
 } from 'lucide-react';
 import type { Category } from './types';
 
@@ -29,4 +30,8 @@ export const EXPENSE_CATEGORIES: Category[] = [
   { value: 'other', label: 'Lainnya', icon: PiggyBank },
 ];
 
-export const ALL_CATEGORIES = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
+export const ALL_CATEGORIES: Category[] = [
+    ...INCOME_CATEGORIES, 
+    ...EXPENSE_CATEGORIES,
+    { value: 'transfer', label: 'Transfer', icon: ArrowRightLeft },
+];

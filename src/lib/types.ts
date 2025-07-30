@@ -20,3 +20,11 @@ export type Account = {
   initialBalance: number;
   type: 'cash' | 'bank';
 };
+
+export type Transfer = {
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  date: Date;
+  description?: string;
+};

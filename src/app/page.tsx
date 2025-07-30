@@ -6,14 +6,14 @@ import {
   Settings,
 } from 'lucide-react';
 
-import type { Account, Transaction } from '@/lib/types';
+import type { Account, Transaction, Transfer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { AddTransactionSheet } from '@/components/AddTransactionSheet';
 import { BalanceCards } from '@/components/BalanceCards';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { SpendingChart } from '@/components/SpendingChart';
 import { ManageAccountsSheet } from '@/components/ManageAccountsSheet';
-import { getAccounts, getTransactions, addTransaction as dbAddTransaction } from '@/lib/supabase';
+import { getAccounts, getTransactions, addTransaction as dbAddTransaction, addTransfer as dbAddTransfer } from '@/lib/supabase';
 
 
 export default function HomePage() {
@@ -50,9 +50,19 @@ export default function HomePage() {
         setTransactions(prev => [
             {...newTransaction, date: new Date(newTransaction.date)},
             ...prev,
-        ]);
+        ].sort((a,b) => b.date.getTime() - a.date.getTime()));
     }
     setAddSheetOpen(false);
+  };
+  
+  const addTransfer = async (transfer: Transfer) => {
+    const newTransactions = await dbAddTransfer(transfer);
+    if (newTransactions) {
+      setTransactions(prev => [
+        ...newTransactions.map(t => ({...t, date: new Date(t.date)})),
+        ...prev,
+      ].sort((a,b) => b.date.getTime() - a.date.getTime()));
+    }
   };
 
   const balances = React.useMemo(() => {
@@ -103,7 +113,7 @@ export default function HomePage() {
             accounts={accounts}
             setAccounts={setAccounts}
           >
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" onClick={() => setManageSheetOpen(true)}>
               <Settings className="h-4 w-4" />
             </Button>
           </ManageAccountsSheet>
@@ -111,9 +121,10 @@ export default function HomePage() {
             isOpen={isAddSheetOpen}
             setIsOpen={setAddSheetOpen}
             addTransaction={addTransaction}
+            addTransfer={addTransfer}
             accounts={accounts}
           >
-            <Button>
+            <Button onClick={() => setAddSheetOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Tambah Transaksi
             </Button>

@@ -1,6 +1,6 @@
-"use client"
+
 import { createClient } from '@supabase/supabase-js'
-import type { Account, Transaction } from '@/lib/types';
+import type { Account, Transaction, Transfer } from '@/lib/types';
 
 const supabaseUrl = 'https://rwztlabcmstqxtcukfif.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3enRsYWJjbXN0cXh0Y3VrZmlmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4MzM2MDIsImV4cCI6MjA2OTQwOTYwMn0.YJeqUNwFuD1NqMMQ1R2oS32y5NUuoNg17PRz777VFDM'
@@ -42,6 +42,37 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
     const result = data?.[0]
     return result ? {...result, accountId: result.account_id} : null;
 }
+
+export async function addTransfer(transfer: Transfer): Promise<Transaction[] | null> {
+    const transferTransactions = [
+        {
+            type: 'expense',
+            amount: transfer.amount,
+            date: transfer.date,
+            description: transfer.description || "Transfer",
+            category: 'transfer',
+            account_id: transfer.fromAccountId,
+        },
+        {
+            type: 'income',
+            amount: transfer.amount,
+            date: transfer.date,
+            description: transfer.description || "Transfer",
+            category: 'transfer',
+            account_id: transfer.toAccountId,
+        },
+    ];
+
+    const { data, error } = await supabase.from('transactions').insert(transferTransactions).select();
+
+     if (error) {
+        console.error('Error adding transfer transaction:', error);
+        return null;
+    }
+    
+    return data ? data.map(d => ({...d, accountId: d.account_id})) : null;
+}
+
 
 export async function addAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account | null> {
     const { data, error } = await supabase.from('accounts').insert({
