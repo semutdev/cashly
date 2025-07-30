@@ -10,21 +10,26 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { ArrowDownCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, Account } from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { ALL_CATEGORIES } from '@/lib/constants';
 
 interface RecentTransactionsProps {
   transactions: Transaction[];
+  accounts: Account[];
 }
 
-export function RecentTransactions({ transactions }: RecentTransactionsProps) {
+export function RecentTransactions({ transactions, accounts }: RecentTransactionsProps) {
   const getCategory = (value: string) => {
     return ALL_CATEGORIES.find(c => c.value === value);
   };
+  
+  const getAccountName = (accountId: string) => {
+    return accounts.find(a => a.id === accountId)?.name || 'N/A';
+  }
 
   return (
     <Card>
@@ -36,7 +41,7 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Transaksi</TableHead>
-              <TableHead className="hidden md:table-cell">Kategori</TableHead>
+              <TableHead className="hidden md:table-cell">Akun</TableHead>
               <TableHead className="text-right">Jumlah</TableHead>
             </TableRow>
           </TableHeader>
@@ -72,12 +77,14 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                           {format(transaction.date, 'd MMM yyyy', {
                             locale: id,
                           })}
+                           {' · '}
+                           {category?.label}
                         </p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <Badge variant="outline">{category?.label}</Badge>
+                    <Badge variant="outline">{getAccountName(transaction.accountId)}</Badge>
                   </TableCell>
                   <TableCell
                     className={cn(

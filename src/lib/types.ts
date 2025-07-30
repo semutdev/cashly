@@ -5,11 +5,18 @@ export type Transaction = {
   date: Date;
   description: string;
   category: string;
-  paymentMethod?: 'cash' | 'bank';
+  accountId: string;
 };
 
 export type Category = {
   value: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+};
+
+export type Account = {
+  id: string;
+  name: string;
+  initialBalance: number;
+  type: 'cash' | 'bank';
 };
