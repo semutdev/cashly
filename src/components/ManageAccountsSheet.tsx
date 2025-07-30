@@ -25,7 +25,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { Account } from '@/lib/types';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { addAccount, updateAccountBalance, deleteAccount } from '@/lib/supabase';
+
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nama bank minimal 2 karakter'),
@@ -39,7 +40,7 @@ interface ManageAccountsSheetProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   accounts: Account[];
-  setAccounts: (accounts: Account[]) => void;
+  setAccounts: (accounts: Account[] | ((prev: Account[]) => Account[])) => void;
 }
 
 export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, setAccounts }: ManageAccountsSheetProps) {
@@ -53,35 +54,69 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
     },
   });
 
-  function onSubmit(values: FormValues) {
-    const newAccount: Account = {
-      id: `bank-${values.name.toLowerCase().replace(/\s/g, '-')}-${Date.now()}`,
+  async function onSubmit(values: FormValues) {
+    const newAccountData: Omit<Account, 'id'> = {
       name: `Bank ${values.name}`,
       initialBalance: values.initialBalance,
       type: 'bank',
     }
-    setAccounts([...accounts, newAccount]);
-    form.reset();
-    toast({
-        title: "Akun Ditambahkan",
-        description: `Akun bank ${values.name} berhasil ditambahkan.`,
-    })
+    const newAccount = await addAccount(newAccountData);
+    if(newAccount){
+        setAccounts(prev => [...prev, newAccount]);
+        form.reset();
+        toast({
+            title: "Akun Ditambahkan",
+            description: `Akun bank ${values.name} berhasil ditambahkan.`,
+        })
+    } else {
+        toast({
+            title: "Gagal Menambahkan Akun",
+            description: `Terjadi kesalahan saat menambahkan akun bank.`,
+            variant: "destructive"
+        })
+    }
   }
   
-  const handleBalanceChange = (accountId: string, newBalance: number) => {
-    setAccounts(accounts.map(acc => 
+  const handleBalanceChange = async (accountId: string, newBalance: number) => {
+    // Optimistic UI update
+    const oldAccounts = accounts;
+    setAccounts(accs => accs.map(acc => 
         acc.id === accountId ? { ...acc, initialBalance: newBalance } : acc
     ));
+
+    const updatedAccount = await updateAccountBalance(accountId, newBalance);
+
+    if(!updatedAccount) {
+        // Revert on failure
+        setAccounts(oldAccounts);
+        toast({
+            title: "Gagal Memperbarui Saldo",
+            description: `Terjadi kesalahan saat memperbarui saldo.`,
+            variant: "destructive"
+        })
+    }
   }
 
-  const handleDelete = (accountId: string) => {
-    // TODO: check if account is used in transactions
-    setAccounts(accounts.filter(acc => acc.id !== accountId));
+  const handleDelete = async (accountId: string) => {
+    const oldAccounts = accounts;
+     setAccounts(accs => accs.filter(acc => acc.id !== accountId));
+    
+    const success = await deleteAccount(accountId);
+
+    if (success) {
      toast({
         title: "Akun Dihapus",
         description: `Akun berhasil dihapus.`,
         variant: "destructive"
     })
+    } else {
+        setAccounts(oldAccounts);
+        toast({
+            title: "Gagal Menghapus Akun",
+            description: `Pastikan tidak ada transaksi yang terkait dengan akun ini.`,
+            variant: "destructive"
+        })
+    }
   }
 
   return (
@@ -104,8 +139,8 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
                         <label className="text-sm font-medium">{account.name}</label>
                         <Input 
                             type="number"
-                            value={account.initialBalance}
-                            onChange={(e) => handleBalanceChange(account.id, parseInt(e.target.value) || 0)}
+                            defaultValue={account.initialBalance}
+                            onBlur={(e) => handleBalanceChange(account.id, parseInt(e.target.value) || 0)}
                             className="mt-1"
                             placeholder="Saldo Awal"
                         />

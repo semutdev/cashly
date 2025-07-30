@@ -58,7 +58,7 @@ interface AddTransactionSheetProps {
   children: React.ReactNode;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>) => Promise<void>;
   accounts: Account[];
 }
 
@@ -80,8 +80,8 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
   const transactionType = form.watch('type');
   const categories = transactionType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
-  function onSubmit(values: FormValues) {
-    addTransaction(values);
+  async function onSubmit(values: FormValues) {
+    await addTransaction(values);
     form.reset({
       ...form.getValues(),
       amount: 0,
@@ -89,6 +89,10 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
       category: '',
       date: new Date()
     });
+     toast({
+        title: "Transaksi Ditambahkan",
+        description: `Transaksi baru berhasil ditambahkan.`,
+    })
   }
 
   return (

@@ -13,68 +13,7 @@ import { BalanceCards } from '@/components/BalanceCards';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { SpendingChart } from '@/components/SpendingChart';
 import { ManageAccountsSheet } from '@/components/ManageAccountsSheet';
-
-const initialAccounts: Account[] = [
-  { id: 'cash', name: 'Tunai', initialBalance: 1000000, type: 'cash' },
-  { id: 'bank-bca', name: 'Bank BCA', initialBalance: 5000000, type: 'bank' },
-];
-
-const initialTransactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'income',
-    amount: 5000,
-    date: new Date('2024-07-01'),
-    description: 'Gaji Bulanan',
-    category: 'salary',
-    accountId: 'bank-bca',
-  },
-  {
-    id: '2',
-    type: 'expense',
-    amount: 50,
-    date: new Date('2024-07-05'),
-    description: 'Makan siang',
-    category: 'food',
-    accountId: 'cash',
-  },
-  {
-    id: '3',
-    type: 'expense',
-    amount: 120,
-    date: new Date('2024-07-03'),
-    description: 'Transportasi ke kantor',
-    category: 'transportation',
-    accountId: 'bank-bca',
-  },
-  {
-    id: '4',
-    type: 'expense',
-    amount: 1000,
-    date: new Date('2024-07-02'),
-    description: 'Sewa bulanan',
-    category: 'housing',
-    accountId: 'bank-bca',
-  },
-   {
-    id: '5',
-    type: 'income',
-    amount: 200,
-    date: new Date('2024-06-15'),
-    description: 'Proyek Freelance',
-    category: 'other',
-    accountId: 'bank-bca',
-  },
-  {
-    id: '6',
-    type: 'expense',
-    amount: 75,
-    date: new Date('2024-06-20'),
-    description: 'Belanja mingguan',
-    category: 'shopping',
-    accountId: 'cash',
-  },
-];
+import { getAccounts, getTransactions, addTransaction as dbAddTransaction } from '@/lib/supabase';
 
 
 export default function HomePage() {
@@ -82,45 +21,37 @@ export default function HomePage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isAddSheetOpen, setAddSheetOpen] = React.useState(false);
   const [isManageSheetOpen, setManageSheetOpen] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    const storedAccounts = localStorage.getItem('accounts');
-    if (storedAccounts) {
-      setAccounts(JSON.parse(storedAccounts));
-    } else {
-      setAccounts(initialAccounts);
-    }
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [accountsData, transactionsData] = await Promise.all([
+          getAccounts(),
+          getTransactions()
+        ]);
+        setAccounts(accountsData);
+        setTransactions(transactionsData.map(t => ({...t, date: new Date(t.date)})));
+      } catch (error) {
+        console.error("Failed to fetch data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const storedTransactions = localStorage.getItem('transactions');
-    if (storedTransactions) {
-      setTransactions(JSON.parse(storedTransactions, (key, value) => {
-        if (key === 'date') {
-          return new Date(value);
-        }
-        return value;
-      }));
-    } else {
-      setTransactions(initialTransactions);
-    }
+    fetchData();
   }, []);
 
-  React.useEffect(() => {
-    if (accounts.length > 0) {
-      localStorage.setItem('accounts', JSON.stringify(accounts));
-    }
-  }, [accounts]);
 
-  React.useEffect(() => {
-    if (transactions.length > 0) {
-      localStorage.setItem('transactions', JSON.stringify(transactions));
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    const newTransaction = await dbAddTransaction(transaction);
+    if (newTransaction) {
+        setTransactions(prev => [
+            {...newTransaction, date: new Date(newTransaction.date)},
+            ...prev,
+        ]);
     }
-  }, [transactions]);
-
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    setTransactions(prev => [
-      { ...transaction, id: crypto.randomUUID() },
-      ...prev,
-    ]);
     setAddSheetOpen(false);
   };
 
@@ -129,8 +60,12 @@ export default function HomePage() {
     accounts.forEach(acc => {
       balanceMap.set(acc.id, acc.initialBalance);
     });
+    
+    // Create a copy of transactions and sort them by date ascending
+    const sortedTransactions = [...transactions].sort((a,b) => a.date.getTime() - b.date.getTime());
 
-    transactions.forEach(t => {
+    sortedTransactions.forEach(t => {
+      if (!t.accountId) return;
       const currentBalance = balanceMap.get(t.accountId) || 0;
       const newBalance = t.type === 'income' 
         ? currentBalance + t.amount 
@@ -138,14 +73,22 @@ export default function HomePage() {
       balanceMap.set(t.accountId, newBalance);
     });
 
-    return Array.from(balanceMap.entries()).map(([accountId, balance]) => {
-      const account = accounts.find(acc => acc.id === accountId);
-      return {
-        ...account!,
-        balance,
-      };
+    return accounts.map(account => {
+        const balance = balanceMap.get(account.id) ?? account.initialBalance;
+        return {
+            ...account,
+            balance,
+        };
     });
   }, [accounts, transactions]);
+
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+            <div className="text-lg">Loading...</div>
+        </div>
+    )
+  }
 
   return (
     <div className="min-h-screen w-full bg-background">
