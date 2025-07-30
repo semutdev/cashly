@@ -27,7 +27,11 @@ export async function getTransactions(): Promise<Transaction[]> {
 
 export async function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt'>): Promise<Transaction | null> {
     const { data, error } = await supabase.from('transactions').insert({
-        ...transaction,
+        type: transaction.type,
+        amount: transaction.amount,
+        date: transaction.date,
+        description: transaction.description,
+        category: transaction.category,
         account_id: transaction.accountId,
     }).select();
 
@@ -41,7 +45,8 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
 
 export async function addAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account | null> {
     const { data, error } = await supabase.from('accounts').insert({
-        ...account,
+        name: account.name,
+        type: account.type,
         initial_balance: account.initialBalance,
     }).select();
 
