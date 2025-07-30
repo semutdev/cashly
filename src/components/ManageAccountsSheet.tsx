@@ -23,10 +23,21 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Account } from '@/lib/types';
-import { PlusCircle, Trash2 } from 'lucide-react';
-import { addAccount, updateAccountBalance, deleteAccount } from '@/lib/supabase';
+import { PlusCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { addAccount, updateAccountBalance, deleteAccount, deleteAllTransactions, resetAllBalances } from '@/lib/supabase';
 
 
 const formSchema = z.object({
@@ -42,9 +53,10 @@ interface ManageAccountsSheetProps {
   setIsOpen: (isOpen: boolean) => void;
   accounts: Account[];
   setAccounts: (accounts: Account[] | ((prev: Account[]) => Account[])) => void;
+  setTransactions: (transactions: any[] | ((prev: any[]) => any[])) => void;
 }
 
-export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, setAccounts }: ManageAccountsSheetProps) {
+export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, setAccounts, setTransactions }: ManageAccountsSheetProps) {
   const { toast } = useToast();
   
   const form = useForm<FormValues>({
@@ -120,6 +132,63 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
     }
   }
   
+  const handleResetTransactions = async () => {
+    const success = await deleteAllTransactions();
+    if(success) {
+      setTransactions([]);
+      toast({
+        title: "Transaksi Dihapus",
+        description: "Semua data transaksi berhasil dihapus.",
+      });
+    } else {
+      toast({
+        title: "Gagal Menghapus Transaksi",
+        description: "Terjadi kesalahan saat menghapus data transaksi.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleResetBalances = async () => {
+    const success = await resetAllBalances();
+    if(success) {
+      setAccounts(prev => prev.map(acc => ({...acc, initialBalance: 0})));
+      toast({
+        title: "Saldo Direset",
+        description: "Semua saldo awal akun berhasil direset menjadi nol.",
+      });
+    } else {
+      toast({
+        title: "Gagal Mereset Saldo",
+        description: "Terjadi kesalahan saat mereset saldo awal.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleResetAll = async () => {
+    const [transactionsSuccess, balancesSuccess] = await Promise.all([
+      deleteAllTransactions(),
+      resetAllBalances()
+    ]);
+
+    if(transactionsSuccess && balancesSuccess) {
+      setTransactions([]);
+      setAccounts(prev => prev.map(acc => ({...acc, initialBalance: 0})));
+      toast({
+        title: "Semua Data Direset",
+        description: "Seluruh transaksi dan saldo awal telah berhasil direset.",
+      });
+    } else {
+      toast({
+        title: "Gagal Mereset Data",
+        description: `Gagal menghapus transaksi: ${transactionsSuccess}. Gagal mereset saldo: ${balancesSuccess}.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+
   const content = (
       <>
         <SheetHeader>
@@ -196,6 +265,70 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
             </Button>
         </form>
         </Form>
+        <hr className="my-4"/>
+
+        <div className="space-y-4 py-6">
+          <h3 className="flex items-center font-semibold text-lg text-destructive">
+            <AlertTriangle className="mr-2 h-5 w-5"/>
+            Zona Berbahaya
+          </h3>
+          <p className="text-sm text-muted-foreground">
+            Tindakan di bawah ini tidak dapat diurungkan. Harap berhati-hati.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" className="flex-1">Reset Semua Data</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini akan menghapus SEMUA transaksi dan mengatur ulang SEMUA saldo awal akun Anda menjadi nol. Data yang sudah dihapus tidak bisa dikembalikan.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetAll}>Ya, Reset Semua</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="flex-1">Hapus Semua Transaksi</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini akan menghapus SEMUA data transaksi Anda. Saldo awal akun tidak akan berubah. Data yang sudah dihapus tidak bisa dikembalikan.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetTransactions}>Ya, Hapus Transaksi</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+             <AlertDialog>
+              <AlertDialogTrigger asChild>
+                 <Button variant="outline" className="flex-1">Reset Saldo Awal</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tindakan ini akan mengatur ulang SEMUA saldo awal akun Anda menjadi nol. Data transaksi tidak akan terpengaruh.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleResetBalances}>Ya, Reset Saldo</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       </>
   )
   

@@ -112,3 +112,35 @@ export async function deleteAccount(accountId: string): Promise<boolean> {
     }
     return true;
 }
+
+export async function deleteAllTransactions(): Promise<boolean> {
+    const { error } = await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    if (error) {
+        console.error('Error deleting all transactions:', error);
+        return false;
+    }
+    return true;
+}
+
+export async function resetAllBalances(): Promise<boolean> {
+    const { data, error: fetchError } = await supabase.from('accounts').select('id');
+    if (fetchError) {
+        console.error('Error fetching accounts for reset:', fetchError);
+        return false;
+    }
+    if (!data) return false;
+    
+    const updates = data.map(acc => 
+        supabase.from('accounts').update({ initial_balance: 0 }).eq('id', acc.id)
+    );
+
+    const results = await Promise.all(updates);
+    const hasError = results.some(res => res.error);
+
+    if (hasError) {
+        console.error('One or more balance resets failed.');
+        return false;
+    }
+
+    return true;
+}

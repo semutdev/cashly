@@ -121,6 +121,7 @@ export default function HomePage() {
             setIsOpen={setManageSheetOpen}
             accounts={accounts}
             setAccounts={setAccounts}
+            setTransactions={setTransactions}
           >
             <Button variant="outline" size="icon">
               <Settings className="h-4 w-4" />
@@ -165,6 +166,7 @@ export default function HomePage() {
             setIsOpen={setManageSheetOpen}
             accounts={accounts}
             setAccounts={setAccounts}
+            setTransactions={setTransactions}
         />
       </BottomNavigation>
     </div>
