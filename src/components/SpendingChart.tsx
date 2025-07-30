@@ -46,17 +46,30 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
         category:
           EXPENSE_CATEGORIES.find(c => c.value === category)?.label || category,
         total,
-        fill: `var(--color-${category})`,
+        fill: `var(--color-${EXPENSE_CATEGORIES.find(c => c.value === category)?.label || category})`,
       }))
       .sort((a, b) => b.total - a.total);
   }, [transactions]);
   
   const chartConfig = React.useMemo(() => {
     const config: any = {};
+    const chartColors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+    
+    // Add more colors if there are more categories than chart colors
+    const extendedColors = [...chartColors];
+    if (EXPENSE_CATEGORIES.length > chartColors.length) {
+        for(let i = 0; i < EXPENSE_CATEGORIES.length - chartColors.length; i++) {
+            // simple hue rotation to generate more colors
+            const baseColor = chartColors[i % chartColors.length];
+            const hue = parseInt(baseColor.match(/hsl\((\d+)/)?.[1] || '0', 10);
+            extendedColors.push(`hsl(${(hue + (i+1) * 30) % 360}, 70%, 60%)`);
+        }
+    }
+
     EXPENSE_CATEGORIES.forEach((cat, index) => {
       config[cat.label] = {
         label: cat.label,
-        color: `hsl(var(--chart-${(index % 5) + 1}))`,
+        color: extendedColors[index % extendedColors.length],
       };
     });
      config['other'] = {
@@ -110,13 +123,52 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
                 <PieChart>
                   <ChartTooltipPrimitive
                     cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
+                    content={<ChartTooltipContent 
+                        hideLabel 
+                        formatter={(value, name) => [formatCurrency(value as number), name]}
+                    />}
                   />
                   <Pie
                     data={expenseData}
                     dataKey="total"
                     nameKey="category"
                     innerRadius={60}
+                    labelLine={false}
+                    label={({
+                      cx,
+                      cy,
+                      midAngle,
+                      innerRadius,
+                      outerRadius,
+                      percent,
+                      index,
+                    }) => {
+                      const RADIAN = Math.PI / 180
+                      const radius = 12 + innerRadius + (outerRadius - innerRadius)
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                      
+                      const categoryData = expenseData[index];
+                      if (!categoryData) return null;
+
+                      const categoryLabel = categoryData.category;
+                      const categoryConfig = chartConfig[categoryLabel];
+
+                      if (!categoryConfig || percent < 0.05) return null;
+
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill={categoryConfig.color}
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          className="text-xs font-bold"
+                        >
+                          {`${(percent * 100).toFixed(0)}%`}
+                        </text>
+                      )
+                    }}
                   />
                 </PieChart>
               </ChartContainer>
