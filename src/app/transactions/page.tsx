@@ -15,7 +15,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
+  DropdownMenuItem,
 } from '@/components/ui/dropdown-menu';
 import {
     Popover,
@@ -32,7 +32,6 @@ import {
   format,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Label } from '@/components/ui/label';
 
 type FilterOption = 'all' | 'week' | 'month' | 'last-month' | 'year' | 'custom';
 
@@ -172,11 +171,14 @@ export default function TransactionsPage() {
             </DropdownMenuRadioGroup>
             <DropdownMenuSeparator />
             <div className="px-2 py-1.5">
-                <DropdownMenuRadioGroup value={filter} onValueChange={(value) => setFilter(value as FilterOption)}>
-                    <DropdownMenuRadioItem value="custom" className='w-full'>
-                        Custom
-                    </DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
+                <DropdownMenuItem onSelect={(e) => {
+                    e.preventDefault();
+                    setFilter('custom');
+                }}>
+                    <span className={cn("w-full", filter === 'custom' && 'font-bold')}>
+                      Custom
+                    </span>
+                </DropdownMenuItem>
                 {filter === 'custom' && (
                     <div className="flex flex-col gap-2 pt-2">
                         <Popover>
