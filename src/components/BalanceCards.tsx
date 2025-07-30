@@ -13,7 +13,7 @@ export function BalanceCards({ balances }: BalanceCardsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {balances.map(account => (
-        <Card key={account.id}>
+        <Card key={`${account.id}-${account.name}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{account.name}</CardTitle>
             {account.type === 'bank' 
