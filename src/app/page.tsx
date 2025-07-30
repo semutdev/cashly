@@ -138,7 +138,6 @@ export default function HomePage() {
           isOpen={isSheetOpen}
           setIsOpen={setSheetOpen}
           addTransaction={addTransaction}
-          pastTransactions={transactions}
         >
           <Button>
             <Plus className="mr-2 h-4 w-4" />

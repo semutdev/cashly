@@ -5,8 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, Sparkles } from 'lucide-react';
-import { getCategorySuggestion } from '@/app/actions';
+import { CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -68,11 +67,9 @@ interface AddTransactionSheetProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
-  pastTransactions: Transaction[];
 }
 
-export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransaction, pastTransactions }: AddTransactionSheetProps) {
-  const [isAILoading, setIsAILoading] = React.useState(false);
+export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransaction }: AddTransactionSheetProps) {
   const { toast } = useToast();
   
   const form = useForm<FormValues>({
@@ -88,46 +85,6 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
   });
 
   const transactionType = form.watch('type');
-
-  const handleSuggestion = async () => {
-    const description = form.getValues('description');
-    if (!description) {
-      toast({
-        title: 'Error',
-        description: 'Mohon isi deskripsi terlebih dahulu.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    setIsAILoading(true);
-    try {
-      const result = await getCategorySuggestion(description, pastTransactions);
-      const allCategories = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
-      const suggestionExists = allCategories.some(c => c.value === result.suggestedCategory);
-      
-      if (suggestionExists) {
-        form.setValue('category', result.suggestedCategory, { shouldValidate: true });
-        toast({
-          title: 'Saran Kategori',
-          description: `Kami menyarankan kategori: ${result.suggestedCategory} (Keyakinan: ${Math.round(result.confidence * 100)}%)`,
-        });
-      } else {
-         toast({
-          title: 'Saran Kategori',
-          description: `AI menyarankan kategori baru: "${result.suggestedCategory}". Silahkan pilih kategori yang ada atau "Lainnya".`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Gagal Mendapatkan Saran',
-        description: 'Gagal mendapatkan saran dari AI. Coba lagi nanti.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsAILoading(false);
-    }
-  };
-
   const categories = transactionType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   function onSubmit(values: FormValues) {
@@ -231,19 +188,6 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
                   </FormItem>
                 )}
               />
-              {transactionType === 'expense' && (
-                <Button
-                  type="button"
-                  onClick={handleSuggestion}
-                  disabled={isAILoading}
-                  className="mt-8 self-end"
-                  variant="outline"
-                  size="icon"
-                  aria-label="Suggest category with AI"
-                >
-                  {isAILoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-accent" />}
-                </Button>
-              )}
             </div>
             
             <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:gap-4">
