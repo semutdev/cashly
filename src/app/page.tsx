@@ -4,6 +4,7 @@ import * as React from 'react';
 import {
   Plus,
   Settings,
+  ArrowRight,
 } from 'lucide-react';
 
 import type { Account, Transaction, Transfer } from '@/lib/types';
@@ -15,6 +16,7 @@ import { SpendingChart } from '@/components/SpendingChart';
 import { ManageAccountsSheet } from '@/components/ManageAccountsSheet';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { getAccounts, getTransactions, addTransaction as dbAddTransaction, addTransfer as dbAddTransfer } from '@/lib/supabase';
+import Link from 'next/link';
 
 
 export default function HomePage() {
@@ -108,6 +110,12 @@ export default function HomePage() {
           KeuanganKu
         </h1>
         <div className="hidden items-center gap-2 md:flex">
+          <Button variant="outline" asChild>
+            <Link href="/transactions">
+              Semua Transaksi
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
            <ManageAccountsSheet
             isOpen={isManageSheetOpen}
             setIsOpen={setManageSheetOpen}
@@ -136,7 +144,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
             <BalanceCards balances={balances} />
-            <RecentTransactions transactions={transactions} accounts={accounts} />
+            <RecentTransactions transactions={transactions.slice(0, 5)} accounts={accounts} />
           </div>
           <div className="space-y-6 lg:col-span-1">
             <SpendingChart transactions={transactions} />

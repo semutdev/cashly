@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -8,46 +9,44 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowDownCircle, ArrowRight } from 'lucide-react';
+import { ArrowDownCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import type { Transaction, Account } from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { ALL_CATEGORIES } from '@/lib/constants';
-import { Button } from './ui/button';
-import Link from 'next/link';
 
-interface RecentTransactionsProps {
+interface TransactionsListProps {
   transactions: Transaction[];
   accounts: Account[];
 }
 
-export function RecentTransactions({ transactions, accounts }: RecentTransactionsProps) {
+export function TransactionsList({ transactions, accounts }: TransactionsListProps) {
   const getCategory = (value: string) => {
     return ALL_CATEGORIES.find(c => c.value === value);
   };
-  
+
   const getAccountName = (accountId: string) => {
     return accounts.find(a => a.id === accountId)?.name || 'N/A';
+  };
+
+  if (transactions.length === 0) {
+    return (
+        <Card>
+            <CardContent className="p-6">
+                <p className="text-center text-muted-foreground">
+                    Tidak ada transaksi untuk ditampilkan.
+                </p>
+            </CardContent>
+        </Card>
+    )
   }
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-            <CardTitle>Transaksi Terakhir</CardTitle>
-            <CardDescription>5 transaksi terakhir Anda akan ditampilkan di sini.</CardDescription>
-        </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/transactions">
-            Lihat Semua
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-        </Button>
-      </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
@@ -76,9 +75,9 @@ export function RecentTransactions({ transactions, accounts }: RecentTransaction
                         <Icon
                           className={cn(
                             'h-5 w-5',
-                             transaction.type === 'income'
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : 'text-rose-600 dark:text-rose-400'
+                            transaction.type === 'income'
+                              ? 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-rose-600 dark:text-rose-400'
                           )}
                         />
                       </div>
@@ -88,8 +87,8 @@ export function RecentTransactions({ transactions, accounts }: RecentTransaction
                           {format(transaction.date, 'd MMM yyyy', {
                             locale: id,
                           })}
-                           {' · '}
-                           {category?.label}
+                          {' · '}
+                          {category?.label}
                         </p>
                       </div>
                     </div>
