@@ -1,11 +1,14 @@
 
-import { createClient } from './server'
+'use server';
+
+import { createClient as createServerClient } from './server'
+import { createClient as createClientClient } from './client'
 import type { Account, Transaction, Transfer } from '@/lib/types';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getAccounts(): Promise<Account[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { return []; }
 
@@ -18,12 +21,12 @@ export async function getAccounts(): Promise<Account[]> {
         console.error('Error fetching accounts:', error);
         return [];
     }
-    return data.map(d => ({...d, initialBalance: d.initial_balance, userId: d.user_id}));
+    return data.map(d => ({...d, id: d.id.toString(), initialBalance: d.initial_balance, userId: d.user_id}));
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
     noStore();
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
      if (!user) { return []; }
 
@@ -42,11 +45,11 @@ export async function getTransactions(): Promise<Transaction[]> {
         console.error('Error fetching transactions:', error);
         return [];
     }
-    return data.map(d => ({...d, accountId: d.account_id, userId: d.accounts.user_id}));
+    return data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString(), userId: d.accounts.user_id}));
 }
 
 export async function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt'>): Promise<Transaction | null> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
      if (!user) { return null; }
 
@@ -64,11 +67,11 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
         return null;
     }
     const result = data?.[0]
-    return result ? {...result, accountId: result.account_id} : null;
+    return result ? {...result, id: result.id.toString(), accountId: result.account_id.toString()} : null;
 }
 
 export async function addTransfer(transfer: Transfer): Promise<Transaction[] | null> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { return null; }
 
@@ -98,12 +101,12 @@ export async function addTransfer(transfer: Transfer): Promise<Transaction[] | n
         return null;
     }
     
-    return data ? data.map(d => ({...d, accountId: d.account_id})) : null;
+    return data ? data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString()})) : null;
 }
 
 
 export async function addAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account | null> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { return null; }
 
@@ -119,11 +122,11 @@ export async function addAccount(account: Omit<Account, 'id' | 'createdAt'>): Pr
         return null;
     }
     const result = data?.[0]
-    return result ? {...result, initialBalance: result.initial_balance, userId: result.user_id} : null;
+    return result ? {...result, id: result.id.toString(), initialBalance: result.initial_balance, userId: result.user_id} : null;
 }
 
 export async function updateAccountBalance(accountId: string, initialBalance: number): Promise<Account | null> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data, error } = await supabase
         .from('accounts')
         .update({ initial_balance: initialBalance })
@@ -135,11 +138,11 @@ export async function updateAccountBalance(accountId: string, initialBalance: nu
         return null;
     }
     const result = data?.[0]
-    return result ? {...result, initialBalance: result.initial_balance} : null;
+    return result ? {...result, id: result.id.toString(), initialBalance: result.initial_balance} : null;
 }
 
 export async function deleteAccount(accountId: string): Promise<boolean> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { error } = await supabase.from('accounts').delete().eq('id', accountId);
     if (error) {
         console.error('Error deleting account:', error);
@@ -149,7 +152,7 @@ export async function deleteAccount(accountId: string): Promise<boolean> {
 }
 
 export async function deleteAllTransactions(): Promise<boolean> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
@@ -184,7 +187,7 @@ export async function deleteAllTransactions(): Promise<boolean> {
 }
 
 export async function resetAllBalances(): Promise<boolean> {
-    const supabase = createClient();
+    const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
     
@@ -199,4 +202,9 @@ export async function resetAllBalances(): Promise<boolean> {
     }
 
     return true;
+}
+
+export async function getUser() {
+    const supabase = createClientClient();
+    return supabase.auth.getUser();
 }
