@@ -69,7 +69,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
 
   async function onSubmit(values: FormValues) {
     const newAccountData: Omit<Account, 'id'> = {
-      name: `Bank ${values.name}`,
+      name: values.name,
       initialBalance: values.initialBalance,
       type: 'bank',
     }

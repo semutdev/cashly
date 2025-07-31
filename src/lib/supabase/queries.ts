@@ -2,7 +2,6 @@
 'use server';
 
 import { createClient as createServerClient } from './server'
-import { createClient as createClientClient } from './client'
 import type { Account, Transaction, Transfer } from '@/lib/types';
 import { unstable_noStore as noStore } from 'next/cache';
 
@@ -202,9 +201,4 @@ export async function resetAllBalances(): Promise<boolean> {
     }
 
     return true;
-}
-
-export async function getUser() {
-    const supabase = createClientClient();
-    return supabase.auth.getUser();
 }
