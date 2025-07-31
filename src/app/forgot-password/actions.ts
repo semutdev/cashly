@@ -7,9 +7,11 @@ export async function resetPassword(formData: any) {
   const supabase = createClient()
 
   const email = formData.email as string
+  
+  const redirectUrl = new URL('/auth/callback?next=/update-password', process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002').toString()
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').origin}/auth/callback?next=/update-password`,
+    redirectTo: redirectUrl,
   })
 
   if (error) {

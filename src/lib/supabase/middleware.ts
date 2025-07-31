@@ -7,8 +7,8 @@ export async function updateSession(request: NextRequest) {
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
     {
       cookies: {
         getAll() {
@@ -34,22 +34,18 @@ export async function updateSession(request: NextRequest) {
   // issues with CSRF protection.
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
-  
-  const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const publicUrls = ['/login', '/signup', '/forgot-password', '/auth/callback'];
+  const publicUrls = ['/login', '/signup', '/forgot-password', '/auth/callback', '/auth/confirm', '/auth/auth-code-error'];
 
-  if (!user && !publicUrls.includes(request.nextUrl.pathname)) {
+  if (!user && !publicUrls.some(url => request.nextUrl.pathname.startsWith(url))) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
   }
 
-  if (user && publicUrls.includes(request.nextUrl.pathname)) {
+  if (user && publicUrls.some(url => request.nextUrl.pathname.startsWith(url) && url !== '/auth/callback')) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
