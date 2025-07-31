@@ -29,10 +29,6 @@ export async function updateSession(
     },
   })
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with CSRF protection.
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
