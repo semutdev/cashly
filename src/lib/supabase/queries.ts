@@ -47,11 +47,17 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
     
-    const { data, error } = await supabase.from('transactions').insert({
-        ...transaction,
-        user_id: user.id,
-        account_id: transaction.accountId,
-    }).select();
+    const transactionData = {
+        type: transaction.type,
+        amount: transaction.amount,
+        date: transaction.date,
+        description: transaction.description,
+        category: transaction.category,
+        account_id: transaction.accountId, // Map accountId to account_id
+        user_id: user.id
+    };
+
+    const { data, error } = await supabase.from('transactions').insert(transactionData).select();
 
     if (error) {
         console.error('Error adding transaction:', error);
