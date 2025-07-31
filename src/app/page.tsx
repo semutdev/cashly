@@ -5,7 +5,9 @@ import {
   Plus,
   Settings,
   ArrowRight,
+  LogOut,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import type { Account, Transaction, Transfer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -15,18 +17,36 @@ import { RecentTransactions } from '@/components/RecentTransactions';
 import { SpendingChart } from '@/components/SpendingChart';
 import { ManageAccountsSheet } from '@/components/ManageAccountsSheet';
 import { BottomNavigation } from '@/components/BottomNavigation';
-import { getAccounts, getTransactions, addTransaction as dbAddTransaction, addTransfer as dbAddTransfer } from '@/lib/supabase';
+import { getAccounts, getTransactions, addTransaction as dbAddTransaction, addTransfer as dbAddTransfer } from '@/lib/supabase/queries';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 
 export default function HomePage() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [user, setUser] = React.useState<any>(null);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isAddSheetOpen, setAddSheetOpen] = React.useState(false);
   const [isManageSheetOpen, setManageSheetOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
+  
+  React.useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      setUser(user);
+    }
+    getUser();
+  }, [router, supabase.auth]);
 
   React.useEffect(() => {
+    if(!user) return;
+
     const fetchData = async () => {
       setLoading(true);
       try {
@@ -44,7 +64,12 @@ export default function HomePage() {
     };
 
     fetchData();
-  }, []);
+  }, [user]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
 
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
@@ -95,7 +120,7 @@ export default function HomePage() {
     });
   }, [accounts, transactions]);
 
-  if (loading) {
+  if (loading || !user) {
     return (
         <div className="flex items-center justify-center min-h-screen">
             <div className="text-lg">Loading...</div>
@@ -139,6 +164,9 @@ export default function HomePage() {
               Tambah Transaksi
             </Button>
           </AddTransactionSheet>
+           <Button variant="outline" size="icon" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+            </Button>
         </div>
       </header>
       <main className="container mx-auto p-4 md:p-6 pb-24 md:pb-6">

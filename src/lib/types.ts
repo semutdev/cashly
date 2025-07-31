@@ -6,6 +6,7 @@ export type Transaction = {
   description: string;
   category: string;
   accountId: string;
+  userId?: string;
 };
 
 export type Category = {
@@ -19,6 +20,7 @@ export type Account = {
   name: string;
   initialBalance: number;
   type: 'cash' | 'bank';
+  userId?: string;
 };
 
 export type Transfer = {

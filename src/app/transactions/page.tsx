@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { ArrowLeft, ListFilter, Calendar as CalendarIcon } from 'lucide-react';
 import Link from 'next/link';
-import { getTransactions, getAccounts } from '@/lib/supabase';
+import { getTransactions, getAccounts } from '@/lib/supabase/queries';
 import type { Transaction, Account } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { TransactionsList } from '@/components/TransactionsList';
@@ -34,10 +34,14 @@ import {
   endOfDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 type FilterOption = 'all' | 'today' | 'week' | 'month' | 'last-month' | 'year' | 'custom';
 
 export default function TransactionsPage() {
+  const router = useRouter();
+  const supabase = createClient();
   const [allTransactions, setAllTransactions] = React.useState<Transaction[]>(
     []
   );
@@ -54,28 +58,38 @@ export default function TransactionsPage() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [transactionsData, accountsData] = await Promise.all([
-          getTransactions(),
-          getAccounts(),
-        ]);
-        const mappedTransactions = transactionsData.map(t => ({
-          ...t,
-          date: new Date(t.date),
-        }));
-        setAllTransactions(mappedTransactions);
-        setFilteredTransactions(mappedTransactions);
-        setAccounts(accountsData);
-      } catch (error) {
-        console.error('Failed to fetch data', error);
-      } finally {
-        setLoading(false);
+     const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
       }
-    };
-    fetchData();
-  }, []);
+      
+      const fetchData = async () => {
+        setLoading(true);
+        try {
+          const [transactionsData, accountsData] = await Promise.all([
+            getTransactions(),
+            getAccounts(),
+          ]);
+          const mappedTransactions = transactionsData.map(t => ({
+            ...t,
+            date: new Date(t.date),
+          }));
+          setAllTransactions(mappedTransactions);
+          setFilteredTransactions(mappedTransactions);
+          setAccounts(accountsData);
+        } catch (error) {
+          console.error('Failed to fetch data', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchData();
+    }
+    getUser();
+  }, [router, supabase.auth]);
+
 
   React.useEffect(() => {
     const now = new Date();
