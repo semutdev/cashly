@@ -104,17 +104,19 @@ export async function addTransfer(transfer: Transfer): Promise<Transaction[] | n
 }
 
 
-export async function addAccount(account: Omit<Account, 'id' | 'createdAt'>): Promise<Account | null> {
+export async function addAccount(account: Omit<Account, 'id' | 'createdAt' | 'userId'>): Promise<Account | null> {
     const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { return null; }
 
-    const { data, error } = await supabase.from('accounts').insert({
+    const newAccountData = {
+        user_id: user.id,
         name: account.name,
         type: account.type,
         initial_balance: account.initialBalance,
-        user_id: user.id
-    }).select();
+    };
+
+    const { data, error } = await supabase.from('accounts').insert(newAccountData).select();
 
     if (error) {
         console.error('Error adding account:', error);
