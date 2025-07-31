@@ -79,12 +79,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
   });
 
   async function onSubmit(values: FormValues) {
-    const newAccountData: Omit<Account, 'id'> = {
-      name: values.name,
-      initialBalance: values.initialBalance,
-      type: values.type,
-    }
-    const newAccount = await addAccount(newAccountData);
+    const newAccount = await addAccount(values);
     if(newAccount){
         setAccounts(prev => [...prev, newAccount]);
         form.reset();
