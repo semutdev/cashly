@@ -8,11 +8,13 @@ import { unstable_noStore as noStore } from 'next/cache';
 export async function getAccounts(): Promise<Account[]> {
     noStore();
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
     
-    // NOTE: No user check as there is no user_id in the table
     const { data, error } = await supabase
         .from('accounts')
-        .select('*');
+        .select('*')
+        .eq('user_id', user.id);
 
     if (error) {
         console.error('Error fetching accounts:', error);
@@ -24,11 +26,13 @@ export async function getAccounts(): Promise<Account[]> {
 export async function getTransactions(): Promise<Transaction[]> {
     noStore();
     const supabase = createServerClient();
+     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
     
-    // NOTE: No user check as there is no user_id in the table
     const { data, error } = await supabase
         .from('transactions')
         .select('*')
+        .eq('user_id', user.id)
         .order('date', { ascending: false });
 
     if (error) {
@@ -38,15 +42,14 @@ export async function getTransactions(): Promise<Transaction[]> {
     return data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString()}));
 }
 
-export async function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt'>): Promise<Transaction | null> {
+export async function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'userId'>): Promise<Transaction | null> {
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
     
     const { data, error } = await supabase.from('transactions').insert({
-        type: transaction.type,
-        amount: transaction.amount,
-        date: transaction.date,
-        description: transaction.description,
-        category: transaction.category,
+        ...transaction,
+        user_id: user.id,
         account_id: transaction.accountId,
     }).select();
 
@@ -60,6 +63,8 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
 
 export async function addTransfer(transfer: Transfer): Promise<Transaction[] | null> {
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
 
     const transferTransactions = [
         {
@@ -69,6 +74,7 @@ export async function addTransfer(transfer: Transfer): Promise<Transaction[] | n
             description: transfer.description || "Transfer",
             category: 'transfer',
             account_id: transfer.fromAccountId,
+            user_id: user.id,
         },
         {
             type: 'income',
@@ -77,6 +83,7 @@ export async function addTransfer(transfer: Transfer): Promise<Transaction[] | n
             description: transfer.description || "Transfer",
             category: 'transfer',
             account_id: transfer.toAccountId,
+            user_id: user.id,
         },
     ];
 
@@ -93,11 +100,14 @@ export async function addTransfer(transfer: Transfer): Promise<Transaction[] | n
 
 export async function addAccount(account: Omit<Account, 'id' | 'createdAt' | 'userId'>): Promise<Account | null> {
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
     
     const newAccountData = {
         name: account.name,
         type: account.type,
         initial_balance: account.initialBalance,
+        user_id: user.id,
     };
 
     const { data, error } = await supabase.from('accounts').insert(newAccountData).select();
@@ -112,10 +122,14 @@ export async function addAccount(account: Omit<Account, 'id' | 'createdAt' | 'us
 
 export async function updateAccountBalance(accountId: string, initialBalance: number): Promise<Account | null> {
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
     const { data, error } = await supabase
         .from('accounts')
         .update({ initial_balance: initialBalance })
         .eq('id', accountId)
+        .eq('user_id', user.id)
         .select();
 
     if (error) {
@@ -128,7 +142,15 @@ export async function updateAccountBalance(accountId: string, initialBalance: nu
 
 export async function deleteAccount(accountId: string): Promise<boolean> {
     const supabase = createServerClient();
-    const { error } = await supabase.from('accounts').delete().eq('id', accountId);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+        .from('accounts')
+        .delete()
+        .eq('id', accountId)
+        .eq('user_id', user.id);
+        
     if (error) {
         console.error('Error deleting account:', error);
         return false;
@@ -138,11 +160,13 @@ export async function deleteAccount(accountId: string): Promise<boolean> {
 
 export async function deleteAllTransactions(): Promise<boolean> {
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
    
     const { error } = await supabase
         .from('transactions')
         .delete()
-        .gt('amount', -1); // Dummy condition to delete all
+        .eq('user_id', user.id);
 
     if (error) {
         console.error('Error deleting all transactions:', error);
@@ -153,10 +177,13 @@ export async function deleteAllTransactions(): Promise<boolean> {
 
 export async function resetAllBalances(): Promise<boolean> {
     const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
     
     const { error } = await supabase
         .from('accounts')
-        .update({ initial_balance: 0 });
+        .update({ initial_balance: 0 })
+        .eq('user_id', user.id);
 
     if (error) {
         console.error('One or more balance resets failed.', error);
