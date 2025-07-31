@@ -16,6 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -41,8 +48,11 @@ import { addAccount, updateAccountBalance, deleteAccount, deleteAllTransactions,
 
 
 const formSchema = z.object({
-  name: z.string().min(2, 'Nama bank minimal 2 karakter'),
+  name: z.string().min(2, 'Nama akun minimal 2 karakter'),
   initialBalance: z.coerce.number().min(0, 'Saldo awal tidak boleh negatif'),
+  type: z.enum(['bank', 'cash'], {
+    required_error: "Tipe akun harus dipilih"
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -64,6 +74,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
     defaultValues: {
       name: '',
       initialBalance: 0,
+      type: 'bank',
     },
   });
 
@@ -71,7 +82,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
     const newAccountData: Omit<Account, 'id'> = {
       name: values.name,
       initialBalance: values.initialBalance,
-      type: 'bank',
+      type: values.type,
     }
     const newAccount = await addAccount(newAccountData);
     if(newAccount){
@@ -79,12 +90,12 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
         form.reset();
         toast({
             title: "Akun Ditambahkan",
-            description: `Akun bank ${values.name} berhasil ditambahkan.`,
+            description: `Akun ${values.name} berhasil ditambahkan.`,
         })
     } else {
         toast({
             title: "Gagal Menambahkan Akun",
-            description: `Terjadi kesalahan saat menambahkan akun bank.`,
+            description: `Terjadi kesalahan saat menambahkan akun.`,
             variant: "destructive"
         })
     }
@@ -194,7 +205,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
         <SheetHeader>
           <SheetTitle>Kelola Akun</SheetTitle>
           <SheetDescription>
-            Atur saldo awal dan tambahkan rekening bank baru di sini.
+            Atur saldo awal dan tambahkan rekening bank atau kas baru di sini.
           </SheetDescription>
         </SheetHeader>
         
@@ -212,7 +223,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
                             placeholder="Saldo Awal"
                         />
                     </div>
-                    {account.type === 'bank' && (
+                    {accounts.length > 1 && (
                         <Button variant="ghost" size="icon" onClick={() => handleDelete(account.id)}>
                             <Trash2 className="h-4 w-4 text-destructive"/>
                         </Button>
@@ -226,42 +237,65 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
 
         <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <h3 className="font-semibold text-lg">Tambah Akun Bank Baru</h3>
+            <h3 className="font-semibold text-lg">Tambah Akun Baru</h3>
             <FormField
             control={form.control}
             name="name"
             render={({ field }) => (
                 <FormItem>
-                <FormLabel>Nama Bank</FormLabel>
+                <FormLabel>Nama Akun</FormLabel>
                 <FormControl>
-                    <Input placeholder="Contoh: Mandiri" {...field} />
+                    <Input placeholder="Contoh: Dompet, Mandiri" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
             )}
             />
-            
-            <FormField
-              control={form.control}
-              name="initialBalance"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Saldo Awal</FormLabel>
-                  <FormControl>
-                    <CurrencyInput
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="0"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipe Akun</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Pilih tipe" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="bank">Bank</SelectItem>
+                        <SelectItem value="cash">Kas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="initialBalance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Saldo Awal</FormLabel>
+                    <FormControl>
+                      <CurrencyInput
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="0"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <Button type="submit" className="w-full">
                 <PlusCircle className="mr-2 h-4 w-4"/>
-                Tambah Akun Bank
+                Tambah Akun
             </Button>
         </form>
         </Form>
