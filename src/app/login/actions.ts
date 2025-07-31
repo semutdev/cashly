@@ -24,3 +24,23 @@ export async function login(formData: any) {
   revalidatePath('/', 'layout')
   redirect('/')
 }
+
+
+export async function loginWithGoogle() {
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `http://localhost:9002/auth/callback`,
+    },
+  })
+
+  if (error) {
+    console.error('Error logging in with Google:', error)
+    redirect('/login?message=Could not authenticate with Google')
+  }
+
+  if (data.url) {
+    redirect(data.url)
+  }
+}
