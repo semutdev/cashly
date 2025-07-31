@@ -37,7 +37,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import type { Account } from '@/lib/types';
 import { PlusCircle, Trash2, AlertTriangle } from 'lucide-react';
-import { addAccount, updateAccountBalance, deleteAccount, deleteAllTransactions, resetAllBalances } from '@/lib/supabase';
+import { addAccount, updateAccountBalance, deleteAccount, deleteAllTransactions, resetAllBalances } from '@/lib/supabase/queries';
 
 
 const formSchema = z.object({
