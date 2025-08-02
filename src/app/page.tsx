@@ -6,8 +6,10 @@ import {
   Settings,
   ArrowRight,
   LogOut,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 import type { Account, Transaction, Transfer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -25,7 +27,7 @@ import Link from 'next/link';
 export default function HomePage() {
   const router = useRouter();
   const supabase = createClient();
-  const [user, setUser] = React.useState<any>(null);
+  const [user, setUser] = React.useState<SupabaseUser | null>(null);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [isAddSheetOpen, setAddSheetOpen] = React.useState(false);
@@ -80,7 +82,10 @@ export default function HomePage() {
             ...prev,
         ].sort((a,b) => b.date.getTime() - a.date.getTime()));
     }
-    setAddSheetOpen(false);
+    // Do not close sheet on desktop
+    if (window.innerWidth < 768) {
+      setAddSheetOpen(false);
+    }
   };
   
   const addTransfer = async (transfer: Transfer) => {
@@ -90,6 +95,9 @@ export default function HomePage() {
         ...newTransactions.map(t => ({...t, date: new Date(t.date)})),
         ...prev,
       ].sort((a,b) => b.date.getTime() - a.date.getTime()));
+    }
+    if (window.innerWidth < 768) {
+      setAddSheetOpen(false);
     }
   };
 
@@ -164,6 +172,11 @@ export default function HomePage() {
               Tambah Transaksi
             </Button>
           </AddTransactionSheet>
+           <Button variant="outline" size="icon" asChild>
+              <Link href="/account">
+                <User className="h-4 w-4" />
+              </Link>
+            </Button>
            <Button variant="outline" size="icon" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
             </Button>
