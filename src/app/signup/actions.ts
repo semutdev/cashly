@@ -22,22 +22,3 @@ export async function signup(formData: any) {
   // redirect is not needed here, user will be prompted to check email
   return { error: null };
 }
-
-export async function signupWithGoogle() {
-  const supabase = createClient()
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `http://localhost:9002/auth/callback`,
-    },
-  })
-
-  if (error) {
-    console.error('Error signing up with Google:', error)
-    redirect('/signup?message=Could not authenticate with Google')
-  }
-  
-  if (data.url) {
-    redirect(data.url)
-  }
-}
