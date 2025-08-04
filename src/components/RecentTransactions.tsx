@@ -95,7 +95,10 @@ export function RecentTransactions({ transactions, accounts }: RecentTransaction
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    <Badge variant="outline">{getAccountName(transaction.accountId)}</Badge>
+                    <div className="flex flex-col items-start gap-1">
+                        <Badge variant="outline">{getAccountName(transaction.accountId)}</Badge>
+                        {transaction.ownerTag && <Badge variant="secondary">{transaction.ownerTag}</Badge>}
+                    </div>
                   </TableCell>
                   <TableCell
                     className={cn(

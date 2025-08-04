@@ -51,6 +51,7 @@ const transactionFormSchema = z.object({
   description: z.string().min(2, 'Deskripsi minimal 2 karakter'),
   category: z.string().min(1, 'Kategori harus diisi'),
   accountId: z.string().min(1, 'Akun harus dipilih'),
+  ownerTag: z.string().optional(),
 });
 
 const transferFormSchema = z.object({
@@ -90,6 +91,7 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
       description: '',
       category: '',
       accountId: '',
+      ownerTag: '',
     },
   });
 
@@ -119,6 +121,11 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
 
   const transactionType = transactionForm.watch('type');
   const categories = transactionType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  
+  const ownerTags = React.useMemo(() => {
+    const tags = new Set(accounts.map(acc => acc.ownerTag).filter(Boolean));
+    return Array.from(tags) as string[];
+  }, [accounts]);
 
   async function onTransactionSubmit(values: TransactionFormValues) {
     await addTransaction(values);
@@ -240,44 +247,71 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
             )}
         />
         </div>
-        
-        <FormField
-        control={transactionForm.control}
-        name="date"
-        render={({ field }) => (
-            <FormItem className="flex flex-col">
-            <FormLabel>Tanggal</FormLabel>
-            <Popover>
-                <PopoverTrigger asChild>
-                <FormControl>
-                    <Button
-                    variant={'outline'}
-                    className={cn(
-                        'w-full pl-3 text-left font-normal',
-                        !field.value && 'text-muted-foreground'
-                    )}
-                    >
-                    {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                </FormControl>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                    mode="single"
-                    selected={field.value}
-                    onSelect={(date) => {
-                        if(date) transactionForm.setValue('date', date)
-                    }}
-                    disabled={date => date > new Date() || date < new Date('1900-01-01')}
-                    initialFocus
-                />
-                </PopoverContent>
-            </Popover>
-            <FormMessage />
-            </FormItem>
-        )}
-        />
+
+        <div className="grid grid-cols-2 gap-4">
+            <FormField
+                control={transactionForm.control}
+                name="date"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                    <FormLabel>Tanggal</FormLabel>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                        <FormControl>
+                            <Button
+                            variant={'outline'}
+                            className={cn(
+                                'w-full pl-3 text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                            )}
+                            >
+                            {field.value ? format(field.value, 'PPP') : <span>Pilih tanggal</span>}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                        </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={(date) => {
+                                if(date) transactionForm.setValue('date', date)
+                            }}
+                            disabled={date => date > new Date() || date < new Date('1900-01-01')}
+                            initialFocus
+                        />
+                        </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField
+                control={transactionForm.control}
+                name="ownerTag"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Pemilik (Opsional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Pilih pemilik" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="">Tidak Ada</SelectItem>
+                        {ownerTags.map(tag => (
+                        <SelectItem key={tag} value={tag}>
+                            {tag}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </div>
 
         <Button type="submit" className="w-full">Simpan Transaksi</Button>
     </>

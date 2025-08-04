@@ -39,7 +39,7 @@ export async function getTransactions(): Promise<Transaction[]> {
         console.error('Error fetching transactions:', error);
         return [];
     }
-    return data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString()}));
+    return data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString(), ownerTag: d.owner_tag}));
 }
 
 export async function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'userId'>): Promise<Transaction | null> {
@@ -54,6 +54,7 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
         description: transaction.description,
         category: transaction.category,
         account_id: transaction.accountId,
+        owner_tag: transaction.ownerTag,
         user_id: user.id
     };
 
@@ -64,7 +65,7 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
         return null;
     }
     const result = data?.[0]
-    return result ? {...result, id: result.id.toString(), accountId: result.account_id.toString()} : null;
+    return result ? {...result, id: result.id.toString(), accountId: result.account_id.toString(), ownerTag: result.owner_tag} : null;
 }
 
 export async function addTransfer(transfer: Transfer): Promise<Transaction[] | null> {
@@ -100,7 +101,7 @@ export async function addTransfer(transfer: Transfer): Promise<Transaction[] | n
         return null;
     }
     
-    return data ? data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString()})) : null;
+    return data ? data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString(), ownerTag: d.owner_tag})) : null;
 }
 
 

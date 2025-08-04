@@ -6,6 +6,7 @@ export type Transaction = {
   description: string;
   category: string;
   accountId: string;
+  ownerTag?: string;
 };
 
 export type Category = {
