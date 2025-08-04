@@ -74,7 +74,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
   const [transaction, setTransaction] = React.useState<Transaction | null>(null);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const { id } = params;
+  const id = params.id;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
