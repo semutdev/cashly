@@ -16,7 +16,7 @@ import type { Category } from './types';
 export const INCOME_CATEGORIES: Category[] = [
   { value: 'salary', label: 'Gaji', icon: Briefcase },
   { value: 'investments', label: 'Investasi', icon: TrendingUp },
-  { value: 'other', label: 'Lainnya', icon: PiggyBank },
+  { value: 'other_income', label: 'Lainnya (Pemasukan)', icon: PiggyBank },
 ];
 
 export const EXPENSE_CATEGORIES: Category[] = [
@@ -27,7 +27,7 @@ export const EXPENSE_CATEGORIES: Category[] = [
   { value: 'entertainment', label: 'Hiburan', icon: Popcorn },
   { value: 'shopping', label: 'Belanja', icon: ShoppingCart },
   { value: 'uncategorized', label: 'Belum Dikategorikan', icon: HelpCircle },
-  { value: 'other', label: 'Lainnya', icon: PiggyBank },
+  { value: 'other_expense', label: 'Lainnya (Pengeluaran)', icon: PiggyBank },
 ];
 
 export const ALL_CATEGORIES: Category[] = [
