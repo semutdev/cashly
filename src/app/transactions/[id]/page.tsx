@@ -6,7 +6,7 @@ import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { format } from 'date-fns';
 import { ArrowLeft, CalendarIcon, Trash2 } from 'lucide-react';
 import Link from 'next/link';
@@ -68,13 +68,14 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export default function TransactionDetailPage({ params }: { params: { id: string } }) {
+export default function TransactionDetailPage() {
   const router = useRouter();
+  const params = useParams();
   const { toast } = useToast();
   const [transaction, setTransaction] = React.useState<Transaction | null>(null);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const id = params.id;
+  const id = params.id as string;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -84,6 +85,8 @@ export default function TransactionDetailPage({ params }: { params: { id: string
   });
   
   React.useEffect(() => {
+    if (!id) return;
+    
     const fetchData = async () => {
         setLoading(true);
         const [transactionData, accountsData] = await Promise.all([
@@ -135,6 +138,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
   }
 
   const handleDelete = async () => {
+    if(!id) return;
     const result = await deleteTransactionAction(id);
      if(result.error) {
         toast({ title: 'Gagal', description: result.error, variant: 'destructive' });
