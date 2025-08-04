@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuItem,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 import {
     Popover,
@@ -36,25 +37,28 @@ import {
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { ALL_CATEGORIES } from '@/lib/constants';
 
 type FilterOption = 'all' | 'today' | 'week' | 'month' | 'last-month' | 'year' | 'custom';
 
 export default function TransactionsPage() {
   const router = useRouter();
   const supabase = createClient();
-  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>(
-    []
-  );
-  const [filteredTransactions, setFilteredTransactions] = React.useState<
-    Transaction[]
-  >([]);
+  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([]);
+  const [filteredTransactions, setFilteredTransactions] = React.useState<Transaction[]>([]);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [filter, setFilter] = React.useState<FilterOption>('all');
+
+  // Filter states
+  const [dateFilter, setDateFilter] = React.useState<FilterOption>('all');
   const [customDateRange, setCustomDateRange] = React.useState<{from: Date | undefined, to: Date | undefined}>({
     from: undefined,
     to: undefined,
-  })
+  });
+  const [categoryFilter, setCategoryFilter] = React.useState<string>('all');
+  const [accountFilter, setAccountFilter] = React.useState<string>('all');
+  const [ownerTagFilter, setOwnerTagFilter] = React.useState<string>('all');
+
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -92,11 +96,14 @@ export default function TransactionsPage() {
 
 
   React.useEffect(() => {
+    let filtered = [...allTransactions];
+
+    // Date filtering
     const now = new Date();
     let startDate: Date | null = null;
     let endDate: Date | null = null;
 
-    switch (filter) {
+    switch (dateFilter) {
       case 'today':
         startDate = startOfDay(now);
         endDate = endOfDay(now);
@@ -120,31 +127,51 @@ export default function TransactionsPage() {
         break;
       case 'custom':
         if(customDateRange.from && customDateRange.to){
-            startDate = customDateRange.from;
-            endDate = customDateRange.to;
-        } else {
-             setFilteredTransactions(allTransactions);
-             return;
+            startDate = startOfDay(customDateRange.from);
+            endDate = endOfDay(customDateRange.to);
         }
         break;
-      case 'all':
-      default:
-        setFilteredTransactions(allTransactions);
-        return;
     }
 
     if (startDate && endDate) {
-      const filtered = allTransactions.filter(
-        t => t.date >= startDate! && t.date <= endDate!
-      );
-      setFilteredTransactions(filtered);
+      filtered = filtered.filter(t => t.date >= startDate! && t.date <= endDate!);
     }
-  }, [filter, allTransactions, customDateRange]);
 
-  const handleCustomFilterClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setFilter('custom');
+    // Category filtering
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(t => t.category === categoryFilter);
+    }
+
+    // Account filtering
+    if (accountFilter !== 'all') {
+      filtered = filtered.filter(t => t.accountId === accountFilter);
+    }
+
+    // Owner Tag filtering
+    if (ownerTagFilter !== 'all') {
+      if (ownerTagFilter === '_none_') {
+         filtered = filtered.filter(t => !t.ownerTag);
+      } else {
+         filtered = filtered.filter(t => t.ownerTag === ownerTagFilter);
+      }
+    }
+
+    setFilteredTransactions(filtered);
+  }, [dateFilter, customDateRange, categoryFilter, accountFilter, ownerTagFilter, allTransactions]);
+
+  const ownerTags = React.useMemo(() => {
+    const tags = new Set(accounts.map(acc => acc.ownerTag).filter(Boolean));
+    return Array.from(tags) as string[];
+  }, [accounts]);
+
+  const resetFilters = () => {
+    setDateFilter('all');
+    setCategoryFilter('all');
+    setAccountFilter('all');
+    setOwnerTagFilter('all');
+    setCustomDateRange({ from: undefined, to: undefined });
   };
+
 
   if (loading) {
     return (
@@ -175,40 +202,27 @@ export default function TransactionsPage() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-64">
+            <DropdownMenuLabel>Filter Tanggal</DropdownMenuLabel>
             <DropdownMenuRadioGroup
-              value={filter}
-              onValueChange={value => setFilter(value as FilterOption)}
+              value={dateFilter}
+              onValueChange={value => setDateFilter(value as FilterOption)}
             >
-              <DropdownMenuRadioItem value="all">
-                Semua
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="today">
-                Hari Ini
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="week">
-                Minggu Ini
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="month">
-                Bulan Ini
-              </DropdownMenuRadioItem>
-               <DropdownMenuRadioItem value="last-month">
-                Bulan Lalu
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="year">
-                Tahun Ini
-              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="all">Semua</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="today">Hari Ini</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="week">Minggu Ini</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="month">Bulan Ini</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="last-month">Bulan Lalu</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="year">Tahun Ini</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-1.5">
+            <div className="px-2 pt-1.5">
                 <DropdownMenuItem 
                     onSelect={(e) => e.preventDefault()}
-                    onClick={() => setFilter('custom')}
+                    onClick={() => setDateFilter('custom')}
+                    className={cn(dateFilter === 'custom' && 'bg-accent')}
                 >
-                    <span className={cn("w-full", filter === 'custom' && 'font-bold')}>
-                      Custom
-                    </span>
+                    Custom
                 </DropdownMenuItem>
-                {filter === 'custom' && (
+                {dateFilter === 'custom' && (
                     <div className="flex flex-col gap-2 pt-2">
                         <Popover>
                             <PopoverTrigger asChild>
@@ -257,6 +271,40 @@ export default function TransactionsPage() {
                     </div>
                 )}
             </div>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Filter Kategori</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={categoryFilter} onValueChange={setCategoryFilter}>
+              <DropdownMenuRadioItem value="all">Semua Kategori</DropdownMenuRadioItem>
+              {ALL_CATEGORIES.map(cat => (
+                <DropdownMenuRadioItem key={cat.value} value={cat.value}>{cat.label}</DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Filter Akun</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={accountFilter} onValueChange={setAccountFilter}>
+              <DropdownMenuRadioItem value="all">Semua Akun</DropdownMenuRadioItem>
+              {accounts.map(acc => (
+                <DropdownMenuRadioItem key={acc.id} value={acc.id}>{acc.name}</DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+            
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Filter Pemilik</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={ownerTagFilter} onValueChange={setOwnerTagFilter}>
+              <DropdownMenuRadioItem value="all">Semua Pemilik</DropdownMenuRadioItem>
+               <DropdownMenuRadioItem value="_none_">Tidak Ada</DropdownMenuRadioItem>
+              {ownerTags.map(tag => (
+                <DropdownMenuRadioItem key={tag} value={tag}>{tag}</DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={resetFilters} className="font-semibold text-destructive">
+                Reset Semua Filter
+            </DropdownMenuItem>
+
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
