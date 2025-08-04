@@ -1,4 +1,5 @@
 
+
 'use client'
 
 import * as React from 'react';
@@ -73,6 +74,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
   const [transaction, setTransaction] = React.useState<Transaction | null>(null);
   const [accounts, setAccounts] = React.useState<Account[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const { id } = params;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -85,7 +87,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
     const fetchData = async () => {
         setLoading(true);
         const [transactionData, accountsData] = await Promise.all([
-            getTransactionById(params.id),
+            getTransactionById(id),
             getAccounts(),
         ]);
 
@@ -106,7 +108,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
         setLoading(false);
     };
     fetchData();
-  }, [params.id, router, toast, form]);
+  }, [id, router, toast, form]);
 
   const transactionType = form.watch('type');
   const categories = transactionType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
@@ -133,7 +135,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
   }
 
   const handleDelete = async () => {
-    const result = await deleteTransactionAction(params.id);
+    const result = await deleteTransactionAction(id);
      if(result.error) {
         toast({ title: 'Gagal', description: result.error, variant: 'destructive' });
     } else {
@@ -342,7 +344,7 @@ export default function TransactionDetailPage({ params }: { params: { id: string
                                     render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Pemilik (Opsional)</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                                        <Select onValueChange={field.onChange} value={field.value || '_none_'}>
                                         <FormControl>
                                             <SelectTrigger>
                                             <SelectValue placeholder="Pilih pemilik" />

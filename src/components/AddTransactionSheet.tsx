@@ -91,7 +91,7 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
       description: '',
       category: '',
       accountId: '',
-      ownerTag: '',
+      ownerTag: '_none_',
     },
   });
 
@@ -139,7 +139,8 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
       amount: 0,
       description: '',
       category: '',
-      date: new Date()
+      date: new Date(),
+      ownerTag: '_none_'
     });
      toast({
         title: "Transaksi Ditambahkan",
@@ -296,7 +297,7 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Pemilik (Opsional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue="">
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue="_none_">
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Pilih pemilik" />
