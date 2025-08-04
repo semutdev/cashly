@@ -128,7 +128,11 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
   }, [accounts]);
 
   async function onTransactionSubmit(values: TransactionFormValues) {
-    await addTransaction(values);
+    const submissionValues = {
+        ...values,
+        ownerTag: values.ownerTag === '_none_' ? undefined : values.ownerTag
+    }
+    await addTransaction(submissionValues);
     transactionForm.reset({
       ...transactionForm.getValues(),
       type: values.type,
@@ -299,7 +303,7 @@ export function AddTransactionSheet({ children, isOpen, setIsOpen, addTransactio
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="">Tidak Ada</SelectItem>
+                        <SelectItem value="_none_">Tidak Ada</SelectItem>
                         {ownerTags.map(tag => (
                         <SelectItem key={tag} value={tag}>
                             {tag}
