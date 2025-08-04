@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -51,6 +52,25 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
       .sort((a, b) => b.total - a.total);
   }, [transactions]);
   
+  const ownerSpendingData = React.useMemo(() => {
+    const ownerTotals = transactions
+      .filter(t => t.type === 'expense' && t.ownerTag)
+      .reduce((acc, t) => {
+        if(t.ownerTag) {
+          acc[t.ownerTag] = (acc[t.ownerTag] || 0) + t.amount;
+        }
+        return acc;
+      }, {} as { [key: string]: number });
+
+    return Object.entries(ownerTotals)
+      .map(([owner, total]) => ({
+        owner,
+        total,
+        fill: `var(--color-${owner})`,
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [transactions]);
+  
   const chartConfig = React.useMemo(() => {
     const config: any = {};
     const chartColors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
@@ -59,7 +79,6 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
     const extendedColors = [...chartColors];
     if (EXPENSE_CATEGORIES.length > chartColors.length) {
         for(let i = 0; i < EXPENSE_CATEGORIES.length - chartColors.length; i++) {
-            // simple hue rotation to generate more colors
             const baseColor = chartColors[i % chartColors.length];
             const hue = parseInt(baseColor.match(/hsl\((\d+)/)?.[1] || '0', 10);
             extendedColors.push(`hsl(${(hue + (i+1) * 30) % 360}, 70%, 60%)`);
@@ -72,12 +91,23 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
         color: extendedColors[index % extendedColors.length],
       };
     });
+
+    const owners = Array.from(new Set(transactions.map(t => t.ownerTag).filter(Boolean)));
+    owners.forEach((owner, index) => {
+        if(owner && !config[owner]) {
+             config[owner] = {
+                label: owner,
+                color: chartColors[(index + 2) % chartColors.length], // Use different starting colors
+             }
+        }
+    });
+
      config['other'] = {
         label: 'Other',
         color: `hsl(var(--chart-5))`,
       };
     return config;
-  }, []);
+  }, [transactions]);
 
 
   const monthlyTrends = React.useMemo(() => {
@@ -111,8 +141,9 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="kategori">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="kategori">Per Kategori</TabsTrigger>
+            <TabsTrigger value="pemilik">Per Pemilik</TabsTrigger>
             <TabsTrigger value="bulanan">Per Bulan</TabsTrigger>
           </TabsList>
           <TabsContent value="kategori">
@@ -173,6 +204,70 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
                 </PieChart>
               </ChartContainer>
           </TabsContent>
+           <TabsContent value="pemilik">
+             <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square max-h-[300px]"
+              >
+                {ownerSpendingData.length > 0 ? (
+                <PieChart>
+                  <ChartTooltipPrimitive
+                    cursor={false}
+                    content={<ChartTooltipContent 
+                        hideLabel 
+                        formatter={(value, name) => [formatCurrency(value as number), name]}
+                    />}
+                  />
+                  <Pie
+                    data={ownerSpendingData}
+                    dataKey="total"
+                    nameKey="owner"
+                    innerRadius={60}
+                    labelLine={false}
+                    label={({
+                      cx,
+                      cy,
+                      midAngle,
+                      innerRadius,
+                      outerRadius,
+                      percent,
+                      index,
+                    }) => {
+                      const RADIAN = Math.PI / 180
+                      const radius = 12 + innerRadius + (outerRadius - innerRadius)
+                      const x = cx + radius * Math.cos(-midAngle * RADIAN)
+                      const y = cy + radius * Math.sin(-midAngle * RADIAN)
+                      
+                      const ownerData = ownerSpendingData[index];
+                      if (!ownerData) return null;
+
+                      const ownerLabel = ownerData.owner;
+                      const ownerConfig = chartConfig[ownerLabel];
+
+                      if (!ownerConfig || percent < 0.05) return null;
+
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          fill={ownerConfig.color}
+                          textAnchor={x > cx ? 'start' : 'end'}
+                          dominantBaseline="central"
+                          className="text-xs font-bold"
+                        >
+                          {`${(percent * 100).toFixed(0)}%`}
+                        </text>
+                      )
+                    }}
+                  />
+                </PieChart>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Tidak ada data pengeluaran dengan tag pemilik.
+                  </div>
+                )}
+              </ChartContainer>
+          </TabsContent>
           <TabsContent value="bulanan">
             <ChartContainer config={{
               income: { label: 'Pemasukan', color: 'hsl(var(--chart-3))' },
@@ -192,3 +287,4 @@ export function SpendingChart({ transactions }: SpendingChartProps) {
     </Card>
   );
 }
+
