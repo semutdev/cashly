@@ -2,7 +2,7 @@
 'use server';
 
 import { createClient as createServerClient } from './server'
-import type { Account, Transaction, Transfer } from '@/lib/types';
+import type { Account, Transaction, Transfer, TransactionWithAccount } from '@/lib/types';
 import { unstable_noStore as noStore } from 'next/cache';
 
 export async function getAccounts(): Promise<Account[]> {
@@ -42,6 +42,37 @@ export async function getTransactions(): Promise<Transaction[]> {
     return data.map(d => ({...d, id: d.id.toString(), accountId: d.account_id.toString(), ownerTag: d.owner_tag}));
 }
 
+export async function getTransactionById(id: string): Promise<TransactionWithAccount | null> {
+    noStore();
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+        .from('transactions')
+        .select(`
+            *,
+            accounts (
+                name
+            )
+        `)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .single();
+    
+    if (error) {
+        console.error('Error fetching transaction by id:', error);
+        return null;
+    }
+
+    return data ? {
+        ...data,
+        id: data.id.toString(),
+        accountId: data.account_id.toString(),
+        ownerTag: data.owner_tag,
+    } : null;
+}
+
 export async function addTransaction(transaction: Omit<Transaction, 'id' | 'createdAt' | 'userId'>): Promise<Transaction | null> {
     const supabase = createServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -67,6 +98,63 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
     const result = data?.[0]
     return result ? {...result, id: result.id.toString(), accountId: result.account_id.toString(), ownerTag: result.owner_tag} : null;
 }
+
+export async function updateTransaction(transaction: Omit<Transaction, 'createdAt' | 'userId'>): Promise<Transaction | null> {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { id, ...transactionData } = transaction;
+
+    const updateData = {
+        type: transactionData.type,
+        amount: transactionData.amount,
+        date: transactionData.date,
+        description: transactionData.description,
+        category: transactionData.category,
+        account_id: transactionData.accountId,
+        owner_tag: transactionData.ownerTag,
+    }
+
+    const { data, error } = await supabase
+        .from('transactions')
+        .update(updateData)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select();
+
+    if (error) {
+        console.error('Error updating transaction:', error);
+        return null;
+    }
+    
+    const result = data?.[0];
+    return result ? {
+        ...result, 
+        id: result.id.toString(), 
+        accountId: result.account_id.toString(), 
+        ownerTag: result.owner_tag
+    } : null;
+}
+
+export async function deleteTransaction(id: string): Promise<boolean> {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+    if (error) {
+        console.error('Error deleting transaction:', error);
+        return false;
+    }
+    return true;
+}
+
 
 export async function addTransfer(transfer: Transfer): Promise<Transaction[] | null> {
     const supabase = createServerClient();

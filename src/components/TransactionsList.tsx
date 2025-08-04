@@ -1,6 +1,7 @@
 
 'use client';
 
+import * as React from 'react';
 import {
   Table,
   TableBody,
@@ -11,12 +12,34 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowDownCircle } from 'lucide-react';
+import { ArrowDownCircle, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import type { Transaction, Account } from '@/lib/types';
 import { cn, formatCurrency } from '@/lib/utils';
 import { ALL_CATEGORIES } from '@/lib/constants';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Button } from './ui/button';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import { deleteTransaction } from '@/lib/supabase/queries';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
+
 
 interface TransactionsListProps {
   transactions: Transaction[];
@@ -24,6 +47,11 @@ interface TransactionsListProps {
 }
 
 export function TransactionsList({ transactions, accounts }: TransactionsListProps) {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = React.useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+
   const getCategory = (value: string) => {
     return ALL_CATEGORIES.find(c => c.value === value);
   };
@@ -31,6 +59,26 @@ export function TransactionsList({ transactions, accounts }: TransactionsListPro
   const getAccountName = (accountId: string) => {
     return accounts.find(a => a.id === accountId)?.name || 'N/A';
   };
+
+  const handleDelete = async (transactionId: string) => {
+    const success = await deleteTransaction(transactionId);
+    if(success) {
+      toast({
+        title: "Transaksi Dihapus",
+        description: "Transaksi berhasil dihapus.",
+        variant: "destructive"
+      });
+      router.refresh();
+    } else {
+      toast({
+        title: "Gagal Menghapus",
+        description: "Terjadi kesalahan saat menghapus transaksi.",
+        variant: "destructive"
+      });
+    }
+    setIsDeleting(null);
+    setDialogOpen(false);
+  }
 
   if (transactions.length === 0) {
     return (
@@ -45,6 +93,25 @@ export function TransactionsList({ transactions, accounts }: TransactionsListPro
   }
 
   return (
+    <>
+    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+            <AlertDialogDescription>
+                Tindakan ini tidak dapat dibatalkan. Ini akan menghapus transaksi secara permanen.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsDeleting(null)}>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+                if(isDeleting) handleDelete(isDeleting)
+            }}>
+                Ya, Hapus
+            </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     <Card>
       <CardContent className="p-0">
         <Table>
@@ -53,6 +120,7 @@ export function TransactionsList({ transactions, accounts }: TransactionsListPro
               <TableHead>Transaksi</TableHead>
               <TableHead className="hidden md:table-cell">Akun</TableHead>
               <TableHead className="text-right">Jumlah</TableHead>
+              <TableHead className="w-[40px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -84,7 +152,7 @@ export function TransactionsList({ transactions, accounts }: TransactionsListPro
                       <div>
                         <p className="font-medium">{transaction.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {format(transaction.date, 'd MMM yyyy', {
+                          {format(new Date(transaction.date), 'd MMM yyyy', {
                             locale: id,
                           })}
                           {' · '}
@@ -110,6 +178,30 @@ export function TransactionsList({ transactions, accounts }: TransactionsListPro
                     {transaction.type === 'income' ? '+' : '-'}
                     {formatCurrency(transaction.amount)}
                   </TableCell>
+                   <TableCell>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4"/>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                                <Link href={`/transactions/${transaction.id}`} className="flex items-center">
+                                    <Pencil className="mr-2 h-4 w-4"/> Edit
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                className="flex items-center text-destructive focus:text-destructive focus:bg-destructive/10" 
+                                onSelect={() => {
+                                    setIsDeleting(transaction.id);
+                                    setDialogOpen(true);
+                                }}>
+                                <Trash2 className="mr-2 h-4 w-4"/> Hapus
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               );
             })}
@@ -117,5 +209,6 @@ export function TransactionsList({ transactions, accounts }: TransactionsListPro
         </Table>
       </CardContent>
     </Card>
+    </>
   );
 }

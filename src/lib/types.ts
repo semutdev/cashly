@@ -9,6 +9,10 @@ export type Transaction = {
   ownerTag?: string;
 };
 
+export type TransactionWithAccount = Transaction & {
+    accounts: { name: string } | null;
+}
+
 export type Category = {
   value: string;
   label: string;
