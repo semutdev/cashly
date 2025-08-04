@@ -43,19 +43,21 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import type { Account } from '@/lib/types';
-import { PlusCircle, Trash2, AlertTriangle } from 'lucide-react';
-import { addAccount, updateAccountBalance, deleteAccount, deleteAllTransactions, resetAllBalances } from '@/lib/supabase/queries';
+import { PlusCircle, Trash2, AlertTriangle, Save } from 'lucide-react';
+import { addAccount, updateAccount, deleteAccount, deleteAllTransactions, resetAllBalances } from '@/lib/supabase/queries';
+import { Badge } from './ui/badge';
 
 
-const formSchema = z.object({
+const addAccountFormSchema = z.object({
   name: z.string().min(2, 'Nama akun minimal 2 karakter'),
   initialBalance: z.coerce.number().min(0, 'Saldo awal tidak boleh negatif'),
   type: z.enum(['bank', 'cash'], {
     required_error: "Tipe akun harus dipilih"
   }),
+  ownerTag: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type AddAccountFormValues = z.infer<typeof addAccountFormSchema>;
 
 interface ManageAccountsSheetProps {
   children?: React.ReactNode;
@@ -66,19 +68,86 @@ interface ManageAccountsSheetProps {
   setTransactions: (transactions: any[] | ((prev: any[]) => any[])) => void;
 }
 
+const EditableAccountRow = ({ account: initialAccount, onUpdate, onDelete }: { account: Account, onUpdate: (account: Account) => void, onDelete: (accountId: string) => void}) => {
+    const {toast} = useToast();
+    const [account, setAccount] = React.useState(initialAccount);
+    const [isSaving, setIsSaving] = React.useState(false);
+    
+    const handleSave = async () => {
+        setIsSaving(true);
+        const updatedAccount = await updateAccount(account);
+        if(updatedAccount) {
+            onUpdate(updatedAccount);
+            toast({
+                title: "Akun Diperbarui",
+                description: `Akun ${updatedAccount.name} berhasil diperbarui.`
+            })
+        } else {
+             toast({
+                title: "Gagal Memperbarui",
+                description: `Gagal memperbarui akun.`,
+                variant: "destructive"
+            })
+        }
+        setIsSaving(false);
+    }
+    
+    return (
+        <div className="p-3 border rounded-lg space-y-3">
+            <div className="flex items-center gap-2">
+                <Input
+                    value={account.name}
+                    onChange={(e) => setAccount(prev => ({...prev, name: e.target.value}))}
+                    placeholder="Nama Akun"
+                    className="flex-1 font-semibold"
+                />
+                 <Button variant="ghost" size="icon" onClick={() => onDelete(account.id)} disabled={isSaving}>
+                    <Trash2 className="h-4 w-4 text-destructive"/>
+                </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+                 <div className="space-y-1">
+                    <label className="text-sm font-medium">Saldo Awal</label>
+                    <CurrencyInput
+                        value={account.initialBalance}
+                        onValueChange={(newBalance) => setAccount(prev => ({...prev, initialBalance: newBalance}))}
+                        placeholder="Saldo Awal"
+                        disabled={isSaving}
+                    />
+                </div>
+                 <div className="space-y-1">
+                    <label className="text-sm font-medium">Tag Pemilik</label>
+                    <Input
+                        value={account.ownerTag || ''}
+                        onChange={(e) => setAccount(prev => ({...prev, ownerTag: e.target.value}))}
+                        placeholder="Contoh: Istri"
+                        disabled={isSaving}
+                    />
+                </div>
+            </div>
+            <Button onClick={handleSave} disabled={isSaving} size="sm" className="w-full">
+                <Save className="mr-2 h-4 w-4"/>
+                {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+            </Button>
+        </div>
+    )
+}
+
+
 export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, setAccounts, setTransactions }: ManageAccountsSheetProps) {
   const { toast } = useToast();
   
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<AddAccountFormValues>({
+    resolver: zodResolver(addAccountFormSchema),
     defaultValues: {
       name: '',
       initialBalance: 0,
       type: 'bank',
+      ownerTag: '',
     },
   });
 
-  async function onSubmit(values: FormValues) {
+  async function onSubmit(values: AddAccountFormValues) {
     const newAccount = await addAccount(values);
     if(newAccount){
         setAccounts(prev => [...prev, newAccount]);
@@ -95,30 +164,24 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
         })
     }
   }
+
+  const handleUpdateAccount = (updatedAccount: Account) => {
+    setAccounts(prev => prev.map(acc => acc.id === updatedAccount.id ? updatedAccount : acc));
+  };
   
-  const handleBalanceChange = async (accountId: string, newBalance: number) => {
-    // Optimistic UI update
-    const oldAccounts = accounts;
-    setAccounts(accs => accs.map(acc => 
-        acc.id === accountId ? { ...acc, initialBalance: newBalance } : acc
-    ));
-
-    const updatedAccount = await updateAccountBalance(accountId, newBalance);
-
-    if(!updatedAccount) {
-        // Revert on failure
-        setAccounts(oldAccounts);
-        toast({
-            title: "Gagal Memperbarui Saldo",
-            description: `Terjadi kesalahan saat memperbarui saldo.`,
-            variant: "destructive"
-        })
-    }
-  }
-
   const handleDelete = async (accountId: string) => {
+    // Prevent deleting the last account
+    if (accounts.length <= 1) {
+        toast({
+            title: "Tidak Dapat Menghapus",
+            description: "Anda harus memiliki setidaknya satu akun.",
+            variant: "destructive"
+        });
+        return;
+    }
+    
     const oldAccounts = accounts;
-     setAccounts(accs => accs.filter(acc => acc.id !== accountId));
+    setAccounts(accs => accs.filter(acc => acc.id !== accountId));
     
     const success = await deleteAccount(accountId);
 
@@ -200,30 +263,15 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
         <SheetHeader>
           <SheetTitle>Kelola Akun</SheetTitle>
           <SheetDescription>
-            Atur saldo awal dan tambahkan rekening bank atau kas baru di sini.
+            Atur saldo awal, nama, dan tag pemilik. Tambah akun baru di sini.
           </SheetDescription>
         </SheetHeader>
         
         <div className="space-y-4 py-6">
-            <h3 className="font-semibold text-lg">Saldo Awal</h3>
-            <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Akun Tersimpan</h3>
+            <div className="space-y-3">
             {accounts.map(account => (
-                <div key={account.id} className="flex items-center gap-2">
-                    <div className="flex-1">
-                        <label className="text-sm font-medium">{account.name}</label>
-                         <CurrencyInput
-                            value={account.initialBalance}
-                            onValueChange={(newBalance) => handleBalanceChange(account.id, newBalance)}
-                            className="mt-1"
-                            placeholder="Saldo Awal"
-                        />
-                    </div>
-                    {accounts.length > 1 && (
-                        <Button variant="ghost" size="icon" onClick={() => handleDelete(account.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive"/>
-                        </Button>
-                    )}
-                </div>
+                <EditableAccountRow key={account.id} account={account} onUpdate={handleUpdateAccount} onDelete={handleDelete} />
             ))}
             </div>
         </div>
@@ -246,6 +294,21 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
                 </FormItem>
             )}
             />
+            
+            <FormField
+                control={form.control}
+                name="ownerTag"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Tag Pemilik (Opsional)</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Contoh: Istri, Suami" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+
 
             <div className="grid grid-cols-2 gap-4">
               <FormField
@@ -365,7 +428,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>{children}</SheetTrigger>
-            <SheetContent className="overflow-y-auto">
+            <SheetContent className="overflow-y-auto max-h-screen">
                 {content}
             </SheetContent>
         </Sheet>
@@ -373,7 +436,7 @@ export function ManageAccountsSheet({ children, isOpen, setIsOpen, accounts, set
   }
 
   return (
-    <SheetContent className="overflow-y-auto">
+    <SheetContent className="overflow-y-auto max-h-screen">
       {content}
     </SheetContent>
   );

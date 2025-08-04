@@ -19,6 +19,7 @@ export type Account = {
   name: string;
   initialBalance: number;
   type: 'cash' | 'bank';
+  ownerTag?: string;
 };
 
 export type Transfer = {

@@ -20,7 +20,7 @@ export async function getAccounts(): Promise<Account[]> {
         console.error('Error fetching accounts:', error);
         return [];
     }
-    return data.map(d => ({...d, id: d.id.toString(), initialBalance: d.initial_balance}));
+    return data.map(d => ({...d, id: d.id.toString(), initialBalance: d.initial_balance, ownerTag: d.owner_tag}));
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
@@ -53,7 +53,7 @@ export async function addTransaction(transaction: Omit<Transaction, 'id' | 'crea
         date: transaction.date,
         description: transaction.description,
         category: transaction.category,
-        account_id: transaction.accountId, // Map accountId to account_id
+        account_id: transaction.accountId,
         user_id: user.id
     };
 
@@ -113,6 +113,7 @@ export async function addAccount(account: Omit<Account, 'id' | 'createdAt' | 'us
         name: account.name,
         type: account.type,
         initial_balance: account.initialBalance,
+        owner_tag: account.ownerTag,
         user_id: user.id,
     };
 
@@ -123,7 +124,31 @@ export async function addAccount(account: Omit<Account, 'id' | 'createdAt' | 'us
         return null;
     }
     const result = data?.[0]
-    return result ? {...result, id: result.id.toString(), initialBalance: result.initial_balance} : null;
+    return result ? {...result, id: result.id.toString(), initialBalance: result.initial_balance, ownerTag: result.owner_tag} : null;
+}
+
+export async function updateAccount(account: Account): Promise<Account | null> {
+    const supabase = createServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+        .from('accounts')
+        .update({ 
+            name: account.name,
+            initial_balance: account.initialBalance,
+            owner_tag: account.ownerTag,
+        })
+        .eq('id', account.id)
+        .eq('user_id', user.id)
+        .select();
+
+    if (error) {
+        console.error('Error updating account:', error);
+        return null;
+    }
+    const result = data?.[0];
+    return result ? {...result, id: result.id.toString(), initialBalance: result.initial_balance, ownerTag: result.owner_tag} : null;
 }
 
 export async function updateAccountBalance(accountId: string, initialBalance: number): Promise<Account | null> {
