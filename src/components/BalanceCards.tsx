@@ -1,10 +1,11 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Landmark, Wallet, Banknote, Users, User as UserIcon } from 'lucide-react';
+import { Landmark, Wallet, Banknote, Users } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import type { Account } from '@/lib/types';
 import * as React from 'react';
+import { Badge } from '@/components/ui/badge';
 
 interface BalanceCardsProps {
   balances: (Account & { balance: number })[];
