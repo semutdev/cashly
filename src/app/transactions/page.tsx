@@ -1,6 +1,8 @@
 
 'use client';
 
+export const runtime = 'edge';
+
 import * as React from 'react';
 import { ArrowLeft, ListFilter, Calendar as CalendarIcon } from 'lucide-react';
 import Link from 'next/link';
